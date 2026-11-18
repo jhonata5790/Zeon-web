@@ -1,0 +1,533 @@
+/* Consivo 0.8.0 beta 2 — interface de perfis ampla, contextual e responsiva. */
+#cv-page[hidden],#cv-onboarding[hidden],#cv-root[hidden]{display:none!important}
+#footerAvatar,#footerName{cursor:pointer}
+#cv-root{position:relative;z-index:1080}
+.cv-onboarding{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(ellipse at 35% 22%,#39245b 0%,#0d0c16 65%);z-index:1100;padding:20px;overflow:auto;color:#f6f1ff;font-family:inherit}
+.cv-create-form{width:min(100%,430px);display:flex;flex-direction:column;gap:10px;background:#1a1727;border:1px solid #4e4165;border-radius:22px;padding:30px;box-shadow:0 24px 70px #0009}
+.cv-create-mark{width:56px;height:56px;background:#382659;border:1px solid #7253ae;border-radius:17px;display:grid;place-items:center;margin:0 auto 8px;color:#cfbbff;font-size:32px}
+.cv-create-form h1,.cv-create-form h2{font-size:23px;letter-spacing:-.5px;margin:2px 0 0;text-align:center;color:#fff}
+.cv-create-form p{font-size:13px;color:#b9b1c9;margin:0 0 12px;text-align:center;line-height:1.5}
+.cv-create-form label{font-size:12px;font-weight:700;color:#e8e1f8;margin-top:5px}
+.cv-create-form input,.cv-full-shell input:not([type=range]),.cv-full-shell textarea,.cv-full-shell select{box-sizing:border-box;min-width:0;border:1px solid #55466e;background:#211d30;color:#f8f4ff;padding:10px 12px;border-radius:10px;outline:none;font:inherit}
+.cv-create-form input:focus,.cv-full-shell input:focus,.cv-full-shell textarea:focus,.cv-full-shell select:focus{border-color:#af8dfc;box-shadow:0 0 0 3px #a773f52a}
+.cv-at-input{display:flex;align-items:center;background:#211d30;border:1px solid #55466e;border-radius:10px;padding-left:12px;color:#b99dea}
+.cv-at-input input{border:0;flex:1;box-shadow:none!important;background:transparent}
+.cv-initial-preview{background:#242036;border:1px solid #3d3552;border-radius:14px;padding:13px;display:flex;align-items:center;gap:12px;margin:6px 0}
+.cv-initial-preview strong{display:block;color:#fff;font-size:14px}.cv-initial-preview small{display:block;color:#b6a8cf;font-size:12px}
+#cv-first-error,#cv-notice{color:#b9adc9;min-height:17px;font-size:12px}#cv-first-error:not(:empty),#cv-notice.error{color:#ffa9bc}
+.cv-primary,.cv-create-form button{font-family:inherit;cursor:pointer;border:0;transition:background .15s ease,filter .15s ease}
+.cv-primary{border-radius:10px;padding:12px 16px;background:#875bd7;color:white;font-weight:750}.cv-primary:disabled{opacity:.5;cursor:default}.cv-link{font-size:12px;background:transparent;color:#bfb4d3;padding:8px}
+.cv-workspace-shell{position:relative;display:flex;flex:1;min-height:0;min-width:0;overflow:hidden}.cv-workspace-shell>#workspace{flex:1;min-height:0;min-width:0}
+.cv-page{position:absolute;inset:0;z-index:30;background:#12101a;color:#f8f5ff;min-width:0;min-height:0;overflow:hidden;display:flex;flex-direction:column;font-family:inherit}
+.cv-loading,.cv-error,.cv-empty{display:grid;place-content:center;gap:18px;flex:1;text-align:center;color:#bcb1ce;padding:22px}
+.cv-full-shell{width:100%;height:100%;min-width:0;min-height:0;display:flex;flex-direction:column;position:relative;--cv-a:#9066E7;--cv-b:#353267;--cv-intensity:.35}
+.cv-page-top{height:64px;flex:0 0 64px;border-bottom:1px solid #353044;padding:0 clamp(14px,3vw,34px);display:flex;align-items:center;gap:14px;background:#181525;z-index:1}
+.cv-page-top strong{font-size:15px;color:#faf9ff}.cv-top-actions{margin-left:auto;display:flex;align-items:center;gap:10px;animation:cvAppear .18s ease both}
+.cv-page button{font:inherit;cursor:pointer}.cv-page button:focus-visible{outline:2px solid #c6a1ff;outline-offset:2px}
+.cv-icon,.cv-edit-main{border:0;color:#f2e9ff;background:#342a4a;border-radius:10px;min-width:37px;height:36px;font-size:20px}
+.cv-icon:hover,.cv-edit-main:hover{background:#4a3866}.cv-edit-main{min-width:40px}
+.cv-save,.cv-cancel{border:0;border-radius:10px;padding:9px 17px;font-size:13px;font-weight:700;animation:cvAppear .18s ease both}
+.cv-save{color:white;background:#7855cf}.cv-save:disabled{opacity:.38;cursor:not-allowed}.cv-cancel{color:#e7dff1;background:#342d40}
+.cv-profile-scroll{overflow:auto;min-height:0;flex:1;padding:22px clamp(15px,3.6vw,48px) 62px;overscroll-behavior:contain}
+.cv-profile-stage{position:relative;width:100%;max-width:1550px;margin:0 auto;isolation:isolate;min-height:100%}
+.cv-page-effect{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:var(--cv-intensity);overflow:hidden}
+.cv-hero,.cv-card-grid,.cv-cards-toolbar,#cv-notice{position:relative;z-index:1}
+.cv-hero{border:1px solid #40344f;border-radius:18px;background:#211c2f;overflow:hidden;box-shadow:0 14px 33px #08060c46}
+.cv-hero.cv-focus{z-index:101;overflow:visible}
+.cv-banner{height:clamp(195px,26vh,330px);position:relative;overflow:hidden;background:linear-gradient(115deg,var(--cv-a),var(--cv-b))}
+.cv-banner img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-hero-content{display:flex;align-items:center;gap:22px;padding:23px clamp(20px,3vw,39px);min-height:128px;background:#211c2f}
+.cv-avatar-wrap{position:relative;width:108px;height:108px;flex:0 0 108px;display:grid;place-items:center}
+.cv-avatar{height:108px;width:108px;display:grid;place-items:center;overflow:visible;border-radius:50%;font-size:39px;font-weight:800;color:#eee2ff;background:linear-gradient(135deg,#644194,#302544);border:4px solid #302344;box-sizing:border-box;box-shadow:0 4px 15px #0005;position:relative;isolation:isolate}
+.cv-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}.cv-avatar.small{width:56px;height:56px;font-size:22px;flex:0 0 56px;border-width:2px}
+.cv-avatar.frame-lilac{border-color:#b38efa}.cv-avatar.frame-gold{border-color:#edc876}.cv-avatar.frame-ice{border-color:#8ed6f6}
+.cv-deco{position:absolute;right:-7px;top:-8px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:#fff;pointer-events:none}
+.cv-deco.deco-sparkle:before{content:'✦';font-size:29px;text-shadow:0 0 11px #edd0ff}.cv-deco.deco-orbit{border:2px dotted #d5bcff;width:116px;height:116px;right:-8px;top:-8px}
+.cv-identity{min-width:0;flex:1}.cv-identity h2{color:#fff;margin:0;font-size:clamp(24px,3vw,33px);line-height:1.28;overflow-wrap:anywhere}
+.cv-identity p{margin:5px 0 0;color:#c0b5d3;font-size:14px;overflow-wrap:anywhere}
+.cv-identity input{display:block;width:min(100%,410px);font-size:16px!important;margin-bottom:9px}.cv-handle-edit{display:flex;align-items:center;gap:5px;color:#baa4d5}.cv-handle-edit input{margin:0!important;font-size:14px!important}
+.cv-hover-edit{position:absolute;inset:0;border:0;background:#08061300;color:#fff;display:grid;place-items:center;font-size:33px;opacity:0;transition:background .15s ease,opacity .15s ease}
+.cv-hover-edit span{transform:translateY(4px);transition:transform .15s ease;text-shadow:0 2px 14px #0009}
+.cv-hover-edit:hover,.cv-hover-edit:focus-visible{opacity:1;background:#08061370}
+.cv-hover-edit:hover span,.cv-hover-edit:focus-visible span{transform:translateY(0)}
+.cv-banner-edit{inset:0}.cv-avatar-edit{border-radius:50%;inset:0}
+.cv-cards-toolbar{display:flex;justify-content:flex-end;min-height:25px;margin-top:17px}
+.cv-add-general{border:1px solid #5c487d;border-radius:9px;background:#312544;color:#e5d5ff;padding:9px 14px;font-size:13px}.cv-add-general:hover{background:#483465}
+.cv-card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:19px;margin-top:12px;padding-bottom:16px}
+.cv-card{--cv-card-tint:#252032;border:1px solid #3c334d;border-radius:16px;background:#211d2b;position:relative;min-width:0;overflow:visible;box-shadow:0 5px 24px #0c0a1633;transition:border-color .15s ease,box-shadow .15s ease}
+.cv-card.cv-note{background:var(--cv-card-tint)}.cv-card.cv-card-hidden{opacity:.57}
+.cv-card.cv-drop-target{box-shadow:0 0 0 3px var(--cv-a);border-color:#ccaeff}.cv-card.dragging{opacity:.56}
+.cv-card-top{display:flex;gap:12px;align-items:center;min-height:55px;padding:14px 20px 4px;position:relative}
+.cv-card-title{font-size:14px;font-weight:750;color:#f3e9ff;flex:1;min-width:0;overflow-wrap:anywhere}
+.cv-editing .cv-card-top{padding-top:47px}.cv-grip{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:65px;height:28px;border:1px solid #ffffff24;border-radius:99px;background:#ffffff10;color:#e1ccff;letter-spacing:4px;font-size:18px!important;cursor:grab!important;text-align:center}
+.cv-grip:active{cursor:grabbing!important}.cv-card-pencil{margin-left:auto;color:#ebdaff;background:#ffffff12;border:0;border-radius:8px;width:32px;height:31px}
+.cv-card-content{padding:6px 20px 20px;line-height:1.6;font-size:13px;color:#e4ddeb;overflow-wrap:anywhere;white-space:pre-wrap}
+.cv-card-muted{color:#aaa0b8;font-size:13px}.cv-date{font-size:14px;color:#e3d7f7}
+.cv-badges{display:flex;gap:8px;flex-wrap:wrap}.cv-badge{display:inline-flex;align-items:center;gap:6px;border-radius:99px;color:#ead8ff;background:#453361;padding:7px 11px;font-size:12px}
+.cv-tags{display:flex;gap:7px;flex-wrap:wrap}.cv-tags>span{background:#363046;border-radius:7px;padding:5px 9px}
+.cv-note-body{line-height:1.65;white-space:normal}.cv-note-body a{color:#d0b0ff;text-decoration:underline}
+.cv-line-item{padding-left:6px}
+.cv-card-panel{display:grid;grid-template-rows:0fr;opacity:0;background:#15101e;border-top:1px solid transparent;border-radius:0 0 15px 15px;transition:grid-template-rows 190ms cubic-bezier(.2,.7,.2,1),opacity 190ms ease,border-color 190ms ease}
+.cv-card-panel.open{grid-template-rows:1fr;opacity:1;border-color:#5d4971}
+.cv-card-panel-clip{min-height:0;overflow:hidden}.cv-card-panel-inner{padding:15px 20px 20px;display:flex;flex-direction:column;gap:14px}
+.cv-card-panel-inner label{display:grid;gap:6px;font-size:12px;color:#d9c8ef}.cv-card-panel-inner textarea{resize:vertical;min-height:68px;font-size:13px;line-height:1.6}
+.cv-format-bar{display:flex;gap:7px}.cv-format-bar button,.cv-card-panel-actions button{border:1px solid #5b4a6e;border-radius:7px;padding:7px 12px;background:#30253d;color:#ede4fa;font-size:13px}
+.cv-format-bar button:hover,.cv-card-panel-actions button:hover{background:#49345f}.cv-card-panel-actions{display:flex;gap:9px;flex-wrap:wrap}.cv-card-panel-actions .cv-danger{color:#ffb4c5}
+.cv-color-dots{display:flex;gap:10px;flex-wrap:wrap}.cv-color-dots button{width:29px;height:29px;border-radius:50%;border:2px solid transparent;background:var(--dot)}.cv-color-dots button.selected{outline:2px solid #fff;outline-offset:2px}
+.cv-hint{font-size:12px;color:#baaccf;margin:0}
+.cv-add-between{position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);border-radius:50%;width:27px;height:27px;background:#573c77;color:white;border:1px solid #a986d7;opacity:0;transition:opacity .14s;z-index:3}
+.cv-card:hover .cv-add-between,.cv-add-between:focus-visible{opacity:1}
+#cv-notice{display:block;min-height:20px;padding:4px 0;margin:10px 0}
+.cv-focus-layer{position:absolute;inset:64px 0 0;z-index:100;pointer-events:none;overflow:visible}
+.cv-focus-shade{position:absolute;inset:0;border:0;background:#08070bcc;pointer-events:auto;cursor:default}
+.cv-focus-menu{position:absolute;width:min(480px,calc(100vw - 48px));max-height:min(65vh,520px);overflow-y:auto;background:#181321;border:1px solid #59466f;border-radius:15px;box-shadow:0 19px 70px #000b;z-index:110;pointer-events:auto;animation:cvMenu .18s cubic-bezier(.2,.8,.2,1) both;padding:16px}
+.cv-avatar-menu{width:min(295px,calc(100vw - 48px))}.cv-focus-title{display:flex;justify-content:space-between;align-items:center;gap:9px;margin-bottom:12px}
+.cv-focus-title strong{font-size:14px}.cv-focus-title button,.cv-library-head button{border:0;color:#ded3ee;background:#32283e;border-radius:8px;width:28px;height:28px;font-size:22px}
+.cv-focus-options{display:flex;flex-direction:column;gap:13px}.cv-focus-options button{border:1px solid #55456b;color:#f4ebff;background:#30253e;padding:10px;border-radius:9px;text-align:left;font-size:13px}
+.cv-focus-options label{display:grid;gap:6px;font-size:12px;color:#dacbef}.cv-focus-options select{width:100%}.cv-focus-options input[type=range]{width:100%;accent-color:#ac83f0;cursor:pointer}
+.cv-colors{background:#211a2d;border:1px solid #443751;padding:11px;border-radius:11px;display:grid;gap:9px}
+.cv-colors>label:first-child{display:flex;align-items:center;justify-content:space-between;font-weight:750}
+.cv-swatch{display:inline-block;width:24px;height:24px;border-radius:50%;background:var(--sw);border:2px solid #ffffff50}.cv-menu-subtle{font-size:12px!important;color:#d9c5f2!important}
+.cv-library-layer{position:absolute;inset:64px 0 0;z-index:150;display:grid;place-items:center}.cv-library-backdrop{position:absolute;inset:0;border:0;background:#05040a99}
+.cv-library{width:min(370px,calc(100% - 32px));border:1px solid #5b4976;border-radius:17px;background:#1c1727;padding:18px;z-index:1;box-shadow:0 20px 80px #000b;animation:cvMenu .18s ease both}
+.cv-library-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:17px}.cv-library-items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.cv-library-items button{border:1px solid #453a58;border-radius:12px;background:#2e263c;color:#f5edff;padding:14px 8px;display:flex;align-items:center;gap:7px;text-align:left;font-size:12px}
+.cv-library-items button span{font-size:18px;color:#c8b0f1}
+.cv-quick{position:fixed;z-index:1050;width:min(310px,calc(100vw - 16px));background:#1d1928;border:1px solid #65517b;border-radius:15px;overflow:hidden;color:white;box-shadow:0 17px 50px #000c}
+.cv-quick-banner{height:75px;background:linear-gradient(120deg,var(--cv-a),var(--cv-b))}.cv-quick-info{display:flex;align-items:center;gap:11px;padding:13px}.cv-quick-info strong,.cv-quick-info small{display:block}.cv-quick-info small{margin-top:4px;font-size:11px;color:#bfb2d0}
+.cv-quick p{padding:2px 13px 12px;margin:0;font-size:12px;line-height:1.5;color:#dcd2e9}.cv-quick button{background:#7f59ca;border:0;border-radius:9px;color:white;padding:9px 12px;margin:0 13px 13px;width:calc(100% - 26px)}
+/* Os efeitos ficam ATRÁS do cabeçalho e dos cards; conteúdo legível em todos os modos. */
+.cv-page-effect::before,.cv-page-effect::after{content:'';position:absolute;inset:0;pointer-events:none}
+.cv-effect-glow::before{background:radial-gradient(ellipse at 50% 30%,#d1b6ff3b,transparent 55%);filter:blur(45px);animation:cvFog 8s ease-in-out infinite alternate}
+.cv-effect-embers::before{background:radial-gradient(2px 3px at 92% 82%,#ff9f4c 99%,transparent),radial-gradient(2px 3px at 87% 68%,#eec174 99%,transparent),radial-gradient(3px 4px at 98% 55%,#f8a563 99%,transparent);background-size:170px 220px;animation:cvEmbers 10s linear infinite}
+.cv-effect-embers::after{background:radial-gradient(ellipse at 95% 95%,#a49da32b,transparent 47%);filter:blur(28px);animation:cvFog 11s ease-in-out infinite alternate}
+.cv-effect-stars::before{background:radial-gradient(2px 2px at 33% 20%,#fff 90%,transparent),radial-gradient(2px 2px at 72% 40%,#d3c6ff 90%,transparent),radial-gradient(1px 1px at 12% 70%,#fff 99%,transparent);background-size:220px 160px;animation:cvFallingStars 13s linear infinite}
+.cv-effect-fog::before{background:radial-gradient(ellipse at 8% 36%,#9eb8c83b,transparent 50%),radial-gradient(ellipse at 90% 78%,#aea2c438,transparent 53%);filter:blur(48px);animation:cvFog 16s ease-in-out infinite alternate}
+.cv-effect-glitch::before{background:repeating-linear-gradient(0deg,transparent 0 70px,#ba88ee28 71px 72px,transparent 73px 180px);animation:cvGlitch 13s steps(3,end) infinite}
+.cv-effect-particles::before{background-image:radial-gradient(2px 2px at 20% 20%,#ffffffd9 90%,transparent),radial-gradient(1px 1px at 78% 60%,#cbb0f8dd 90%,transparent);background-size:240px 230px;animation:cvEmbers 18s linear infinite}
+.cv-effect-aurora::before{background:linear-gradient(125deg,transparent 8%,#b188df3e 45%,#61bbc939 62%,transparent 90%);filter:blur(65px);animation:cvFog 12s ease-in-out infinite alternate}
+@keyframes cvAppear{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
+@keyframes cvMenu{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes cvEmbers{to{background-position:30px -340px}}
+@keyframes cvFog{to{transform:translate3d(8%,4%,0)}}
+@keyframes cvFallingStars{to{background-position:70px 500px}}
+@keyframes cvGlitch{0%,97%,100%{opacity:0;transform:none}98%{opacity:1;transform:translateX(7px)}99%{opacity:.8;transform:translateX(-4px)}}
+@media(max-width:830px){.cv-card-grid{grid-template-columns:1fr}.cv-profile-scroll{padding:12px 13px 30px}.cv-banner{height:170px}.cv-hero-content{min-height:94px;padding:14px;gap:13px}.cv-avatar-wrap,.cv-avatar{width:72px;height:72px;flex-basis:72px}.cv-avatar{font-size:26px}.cv-identity h2{font-size:21px}.cv-card-grid{gap:12px}.cv-focus-menu{max-height:58vh}}
+@media(prefers-reduced-motion:reduce){.cv-page *,.cv-page *::before,.cv-page *::after{animation:none!important;transition:none!important}.cv-page-effect{opacity:0!important}}
+
+.cv-focus-spotlight{position:absolute;z-index:104;pointer-events:none;overflow:hidden;box-shadow:0 0 0 2px #ab86eb99,0 0 38px #0009;display:grid;place-items:center}
+.cv-focus-spotlight.avatar{border-radius:50%;overflow:visible}.cv-focus-spotlight.banner{border-radius:12px}
+.cv-focus-spotlight.banner img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* v0.8.0 Beta 3 - editor compacto A + D. Regras isoladas ao menu do banner. */
+.cv-banner-menu{
+  box-sizing:border-box;width:min(448px,calc(100vw - 48px));max-height:min(70vh,480px);
+  overflow-y:auto;scrollbar-width:thin;scrollbar-color:#615275 transparent;
+  background:#201b2a;border:1px solid #50455f;border-radius:16px;
+  padding:15px;box-shadow:0 20px 60px #000b,0 0 0 1px #ffffff08;
+}
+.cv-banner-menu .cv-focus-title{margin-bottom:14px}
+.cv-banner-menu .cv-focus-title strong{font-size:14px;letter-spacing:.15px}
+.cv-banner-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:4px;
+  background:#181420;border:1px solid #392f47;border-radius:12px;margin-bottom:12px}
+.cv-banner-tab{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;
+  min-height:54px;border:0;border-radius:9px;background:transparent;color:#a99abf;
+  cursor:pointer;transition:background 130ms ease,color 130ms ease,transform 130ms ease}
+.cv-banner-tab>span{font-size:20px;line-height:1}.cv-banner-tab>small{font-size:11px;font-weight:650}
+.cv-banner-tab:hover,.cv-banner-tab:focus-visible{background:#382b49;color:#f1e9ff}
+.cv-banner-tab.active{background:#4b3564;color:#f7efff;box-shadow:inset 0 -2px 0 #b48ded}
+.cv-banner-tab-panel{background:#2b2437;border:1px solid #42364f;border-radius:12px;padding:15px;
+  min-height:115px;animation:cvToolFade 130ms ease both}
+.cv-banner-section-title{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
+.cv-banner-section-title strong{font-size:13px;color:#fff;font-weight:750}
+.cv-banner-section-title>span{font-size:11px;color:#bbaecc}
+.cv-banner-menu .cv-tool-button{display:flex;gap:10px;align-items:center;justify-content:flex-start;width:100%;
+  padding:11px 13px;background:#372b46;border:1px solid #544565;border-radius:10px;color:#f2e8ff;
+  font-size:12px;cursor:pointer;margin-top:8px;transition:background .13s ease}
+.cv-banner-menu .cv-tool-button>span:nth-child(2){flex:1;text-align:left}
+.cv-banner-menu .cv-tool-button:hover{background:#463457}
+.cv-banner-menu .cv-tool-primary{background:#61428b;border-color:#835db4}
+.cv-banner-menu .cv-tool-primary:hover{background:#75519f}
+.cv-banner-menu .cv-tool-quiet{background:transparent;color:#c7bad7}
+.cv-color-choice{display:flex;gap:8px;margin-bottom:12px}
+.cv-color-select{flex:1;display:flex;align-items:center;gap:10px;background:#30273c;border:1px solid #4c3e5d;
+  color:#c9bcd9;border-radius:10px;padding:9px 10px;cursor:pointer;font-size:12px}
+.cv-color-select.active{background:#3d2d52;border-color:#a47ad5;color:#fff}
+.cv-color-select i,.cv-color-current i{flex:0 0 auto;display:block;width:24px;height:24px;
+  border-radius:50%;background:var(--sw);box-shadow:0 0 0 2px #ffffff28}
+.cv-color-current{display:flex;align-items:center;justify-content:space-between;background:#201b2b;
+  border:1px solid #40344d;padding:8px 11px;border-radius:9px;color:#bdb0d1;font-size:11px;margin-bottom:11px}
+.cv-color-current i{width:33px;height:33px}
+.cv-custom-range{display:flex;flex-direction:column;gap:10px;color:#d9cbea;font-size:11px}
+.cv-custom-range>span{display:flex;justify-content:space-between;align-items:center}
+.cv-custom-range output{color:#d6b9fb;font-variant-numeric:tabular-nums}
+.cv-banner-menu input[type=range]{-webkit-appearance:none;appearance:none;display:block;width:100%;height:8px;
+  border-radius:100px;border:0;margin:0 0 6px;background:linear-gradient(90deg,#a778eb 0%,#a778eb var(--cv-range-value,50%),#54465e var(--cv-range-value,50%),#54465e 100%);cursor:pointer}
+.cv-banner-menu input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;height:17px;width:17px;
+  border-radius:50%;border:3px solid #f6eaff;background:#8663b5;box-shadow:0 1px 7px #0008;cursor:grab}
+.cv-banner-menu input[type=range]::-moz-range-thumb{height:12px;width:12px;border:3px solid #f6eaff;
+  background:#8663b5;border-radius:50%;box-shadow:0 1px 7px #0008;cursor:grab}
+.cv-banner-menu input[type=range]:disabled{opacity:.32;cursor:not-allowed}
+/* Faixas HSL: especificidade acima de .cv-banner-menu input[type=range].
+   O seletor generico mantem o preenchimento roxo apenas na intensidade do efeito. */
+.cv-banner-menu input[type="range"].cv-hue-slider {
+  background:linear-gradient(to right,
+    #ff0000 0%,#ffff00 16.667%,#00ff00 33.333%,
+    #00ffff 50%,#0000ff 66.667%,#ff00ff 83.333%,#ff0000 100%);
+}
+.cv-banner-menu input[type="range"].cv-saturation-slider {
+  background:linear-gradient(to right,
+    hsl(var(--cv-hue,0) 0% var(--cv-light,50%)),
+    hsl(var(--cv-hue,0) 100% var(--cv-light,50%)));
+}
+.cv-banner-menu input[type="range"].cv-luminance-slider {
+  background:linear-gradient(to right,
+    #000 0%,
+    hsl(var(--cv-hue,0) var(--cv-sat,100%) 50%) 50%,
+    #fff 100%);
+}
+.cv-banner-menu .cv-banner-colors-tab input[type="range"]::-webkit-slider-thumb {
+  background:#fbf9ff;
+  border:3px solid #322542;
+  box-shadow:0 0 0 2px #d5c6ec,0 2px 7px #0009;
+}
+.cv-banner-menu .cv-banner-colors-tab input[type="range"]::-moz-range-thumb {
+  background:#fbf9ff;
+  border:3px solid #322542;
+  box-shadow:0 0 0 2px #d5c6ec,0 2px 7px #0009;
+}
+.cv-color-range-pair{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:10px}
+.cv-effect-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-bottom:14px}
+.cv-effect-option{min-height:65px;border:1px solid #51415f;border-radius:10px;background:#33293f;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:7px;cursor:pointer;color:#c5b6d5}
+.cv-effect-option span{font-size:21px;line-height:1}
+.cv-effect-option small{font-size:10px;font-weight:650}
+.cv-effect-option:hover{background:#433351}
+.cv-effect-option.active{background:#4a3660;color:#f4ebff;border-color:#b58ce9;box-shadow:inset 0 0 0 1px #b58ce943}
+.cv-banner-adjust-tab .cv-tool-button+button{margin-top:8px}
+@keyframes cvToolFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+/* Corrige avatar com proporção não quadrada sem cortar as decorações externas. */
+.cv-avatar>img{position:absolute;inset:0;width:100%;height:100%;max-width:100%;max-height:100%;
+  object-fit:cover;object-position:center;display:block;border-radius:50%}
+@media(max-width:620px){.cv-banner-menu{width:min(400px,calc(100vw - 32px));padding:12px}
+  .cv-banner-tab>small{font-size:10px}.cv-color-range-pair{grid-template-columns:1fr;gap:9px}}
+@media(prefers-reduced-motion:reduce){.cv-banner-tab-panel,.cv-banner-tab{animation:none!important;transition:none!important}}
+
+/* Consivo Beta 7 — scrollbar invisivel no perfil; scroll preservado */
+.cv-page .cv-profile-scroll {
+  scrollbar-width: none;           /* Firefox e Chromium moderno */
+  -ms-overflow-style: none;        /* Compatibilidade */
+}
+.cv-page .cv-profile-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;                   /* Chrome/Electron/WebKit */
+}
+
+
+/* ================================================================
+   ZEON — Efeitos de perfil 1.0
+   Camadas CSS sem canvas, bibliotecas ou estilos inline (CSP segura).
+   ================================================================ */
+.cv-banner > img {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:0;
+}
+.cv-banner > .cv-hover-edit { z-index:3; }
+
+.cv-fx {
+  position:absolute;
+  inset:0;
+  overflow:hidden;
+  pointer-events:none;
+  isolation:isolate;
+  contain:paint;
+  opacity:clamp(0,calc(var(--cv-intensity,.35) * 1.75),1);
+  transition:opacity .18s ease;
+}
+.cv-page-effect.cv-fx {
+  /* A camada acompanha a area util da pagina, e nao a altura dos cards. */
+  position:absolute;
+  top:64px;
+  right:0;
+  bottom:0;
+  left:0;
+  width:auto;
+  height:auto;
+  z-index:0;
+  opacity:clamp(0,calc(var(--cv-intensity,.35) * 1.1),.92);
+}
+.cv-banner-fx.cv-fx { z-index:1; }
+.cv-fx.cv-effect-none { display:none; }
+.cv-fx::before,.cv-fx::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  will-change:transform,opacity;
+}
+.cv-fx i {
+  display:none;
+  position:absolute;
+  left:var(--fx-x);
+  top:var(--fx-y);
+  width:var(--fx-size);
+  height:var(--fx-size);
+  pointer-events:none;
+  animation-delay:var(--fx-delay);
+}
+.cv-fx i:nth-child(1) {--fx-x:9%;--fx-y:74%;--fx-size:3px;--fx-delay:-1s;--fx-time:4.5s}
+.cv-fx i:nth-child(2) {--fx-x:18%;--fx-y:24%;--fx-size:4px;--fx-delay:-2.8s;--fx-time:6s}
+.cv-fx i:nth-child(3) {--fx-x:28%;--fx-y:63%;--fx-size:2px;--fx-delay:-4s;--fx-time:5.3s}
+.cv-fx i:nth-child(4) {--fx-x:36%;--fx-y:37%;--fx-size:5px;--fx-delay:-1.7s;--fx-time:6.4s}
+.cv-fx i:nth-child(5) {--fx-x:45%;--fx-y:87%;--fx-size:3px;--fx-delay:-5s;--fx-time:4.7s}
+.cv-fx i:nth-child(6) {--fx-x:54%;--fx-y:20%;--fx-size:2px;--fx-delay:-3.3s;--fx-time:5.8s}
+.cv-fx i:nth-child(7) {--fx-x:62%;--fx-y:70%;--fx-size:4px;--fx-delay:-.9s;--fx-time:6.6s}
+.cv-fx i:nth-child(8) {--fx-x:73%;--fx-y:48%;--fx-size:3px;--fx-delay:-4.7s;--fx-time:5.5s}
+.cv-fx i:nth-child(9) {--fx-x:81%;--fx-y:83%;--fx-size:5px;--fx-delay:-2.2s;--fx-time:7s}
+.cv-fx i:nth-child(10){--fx-x:90%;--fx-y:21%;--fx-size:3px;--fx-delay:-6s;--fx-time:5.1s}
+.cv-fx i:nth-child(11){--fx-x:95%;--fx-y:55%;--fx-size:2px;--fx-delay:-3.7s;--fx-time:6.8s}
+.cv-fx i:nth-child(12){--fx-x:5%;--fx-y:42%;--fx-size:4px;--fx-delay:-5.2s;--fx-time:5.9s}
+
+/* BRILHO — halos de luz que passeiam pelo banner */
+.cv-fx.cv-effect-glow::before {
+  inset:-35%;
+  background:radial-gradient(ellipse at 20% 65%,#fff8e69e 0%,#f8c8fb55 13%,transparent 39%),
+             radial-gradient(ellipse at 84% 24%,#9af4ff9e 0%,#ad88ff5b 16%,transparent 42%);
+  filter:blur(18px);
+  animation:zeonFxGlow 8s ease-in-out infinite alternate;
+}
+.cv-fx.cv-effect-glow::after {
+  inset:-70% -35%;
+  background:linear-gradient(100deg,transparent 40%,#ffffff00 43%,#ffffff7e 50%,#ffffff12 56%,transparent 62%);
+  transform:rotate(-10deg);
+  animation:zeonFxSweep 10s ease-in-out infinite;
+}
+
+/* BRASAS — pontos incandescentes com brilho quente subindo */
+.cv-fx.cv-effect-embers::before {
+  background:radial-gradient(ellipse at 45% 125%,#ff7f368c 0%,#c94a2653 30%,transparent 65%);
+  animation:zeonFxWarmth 5.5s ease-in-out infinite alternate;
+}
+.cv-fx.cv-effect-embers::after {
+  background:linear-gradient(to top,#41150f65,transparent 65%);
+}
+.cv-fx.cv-effect-embers i {
+  display:block;
+  border-radius:45% 45% 50% 50%;
+  background:#ffe7a5;
+  box-shadow:0 0 7px 2px #ffb04fb9,0 0 18px #ff6a2f86;
+  animation:zeonFxEmber var(--fx-time) ease-out infinite;
+}
+
+/* ESTRELAS — pequenos brilhos, céu profundo e estrela cadente */
+.cv-fx.cv-effect-stars::before {
+  background:radial-gradient(circle at 10% 18%,#ffffffad 1px,transparent 2px),
+             radial-gradient(circle at 73% 64%,#f5e8ffcb 1px,transparent 2px),
+             radial-gradient(circle at 36% 42%,#d6f0ffb6 1px,transparent 2px),
+             linear-gradient(120deg,#090d2b40,transparent 75%);
+  background-size:175px 145px,220px 190px,290px 220px,100% 100%;
+  animation:zeonFxStarField 32s linear infinite;
+}
+.cv-fx.cv-effect-stars::after {
+  inset:0 auto auto 0;
+  width:42%;height:2px;
+  background:linear-gradient(90deg,transparent,#c9dfff28,#f5fbff);
+  box-shadow:0 0 12px #a3d5ffad;
+  transform:translate(-120%,50px) rotate(-19deg);
+  animation:zeonFxMeteor 11s ease-in-out infinite;
+}
+.cv-fx.cv-effect-stars i {
+  display:block;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 0 5px 2px #ffffff95,0 0 14px #cfc3ff8c;
+  animation:zeonFxTwinkle var(--fx-time) ease-in-out infinite alternate;
+}
+
+/* NEBLINA — duas camadas atmosféricas com movimentos independentes */
+.cv-fx.cv-effect-fog::before {
+  inset:-30%;
+  background:radial-gradient(ellipse at 15% 70%,#ecf8ffd1,transparent 48%),
+             radial-gradient(ellipse at 65% 40%,#d6dbff9f,transparent 58%);
+  filter:blur(35px);
+  animation:zeonFxFogA 16s ease-in-out infinite alternate;
+}
+.cv-fx.cv-effect-fog::after {
+  inset:-25%;
+  background:radial-gradient(ellipse at 89% 62%,#ffffffa8,transparent 46%),
+             radial-gradient(ellipse at 35% 84%,#a9d9e299,transparent 50%);
+  filter:blur(42px);
+  animation:zeonFxFogB 20s ease-in-out infinite alternate;
+}
+
+/* GLITCH — cromatismo e varredura sutis, sem flashes fortes */
+.cv-fx.cv-effect-glitch::before {
+  background:repeating-linear-gradient(0deg,#ffffff0c 0 1px,transparent 1px 7px),
+             linear-gradient(90deg,transparent 10%,#ff41643f 18%,transparent 26%,
+             transparent 66%,#35ecff45 75%,transparent 82%);
+  background-size:100% 100%,170% 100%;
+  animation:zeonFxScan 14s linear infinite;
+}
+.cv-fx.cv-effect-glitch::after {
+  inset:25% -2% 45%;
+  background:linear-gradient(90deg,#ff4b7288,transparent 33%,#3aebff85 75%,transparent);
+  filter:blur(3px);
+  opacity:.45;
+  animation:zeonFxGlitch 9s steps(1,end) infinite;
+}
+
+/* PARTÍCULAS — orbes claros em deriva suave */
+.cv-fx.cv-effect-particles::before {
+  background:radial-gradient(ellipse at 5% 95%,#c8a4ff58,transparent 45%),
+             radial-gradient(ellipse at 90% 8%,#9cf4f958,transparent 50%);
+  animation:zeonFxWarmth 12s ease-in-out infinite alternate;
+}
+.cv-fx.cv-effect-particles i {
+  display:block;
+  border-radius:50%;
+  background:#e8dcff;
+  box-shadow:0 0 8px 2px #a6a0ffae,0 0 20px #bdf7ff8d;
+  animation:zeonFxFloat var(--fx-time) ease-in-out infinite alternate;
+}
+.cv-fx.cv-effect-particles i:nth-child(3n) {background:#b5f7ff;box-shadow:0 0 10px #77f8ffb6}
+
+/* AURORA — faixas de luz volumétricas em movimento lento */
+.cv-fx.cv-effect-aurora::before {
+  inset:-60% -45%;
+  background:linear-gradient(110deg,transparent 20%,#4df8bb00 30%,#4df8bb8a 39%,
+      #8fbcff60 48%,#a374ffb8 58%,#ff80d95e 65%,transparent 75%);
+  filter:blur(20px);
+  transform:rotate(-13deg);
+  animation:zeonFxAuroraA 15s ease-in-out infinite alternate;
+}
+.cv-fx.cv-effect-aurora::after {
+  inset:-50%;
+  background:linear-gradient(70deg,transparent 25%,#43d9ff6d 44%,#d6acff70 58%,transparent 75%);
+  filter:blur(34px);
+  transform:rotate(16deg);
+  animation:zeonFxAuroraB 20s ease-in-out infinite alternate;
+}
+
+/* PRÉVIA — usa o mesmo sistema de efeito do banner */
+.cv-fx-preview {
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  overflow:hidden;
+  min-height:90px;
+  border:1px solid #78618e;
+  border-radius:11px;
+  margin:0 0 12px;
+  padding:12px 14px;
+  background:linear-gradient(110deg,var(--cv-a,#9066E7),var(--cv-b,#353267));
+  box-sizing:border-box;
+  isolation:isolate;
+}
+.cv-fx-preview .cv-fx {z-index:0}
+.cv-fx-preview strong,.cv-fx-preview small {position:relative;z-index:1;text-shadow:0 2px 9px #000b}
+.cv-fx-preview strong {font-size:13px;color:white;line-height:1.2}
+.cv-fx-preview small {font-size:11px;color:#f7f3ff;margin-top:3px}
+.cv-fx-preview:after {content:'AO VIVO';position:absolute;right:10px;top:9px;font-size:9px;
+  font-weight:800;letter-spacing:.8px;color:#fff;background:#0c0a1778;border:1px solid #ffffff53;
+  border-radius:99px;padding:4px 7px;z-index:2}
+.cv-banner-menu .cv-effect-option {
+  min-height:70px;
+  position:relative;
+  overflow:hidden;
+  transition:background .15s ease,border-color .15s ease,transform .15s ease;
+}
+.cv-banner-menu .cv-effect-option:hover {transform:translateY(-2px);border-color:#b18ae1}
+.cv-banner-menu .cv-effect-option.active {background:#533978;border-color:#d8aaff}
+.cv-banner-menu .cv-effect-option.active::after {
+  content:'';position:absolute;inset:0 auto 0 0;width:3px;background:#d6b0ff;
+}
+.cv-fx-description {color:#d3c6e5;font-size:11px;line-height:1.5;margin:-4px 0 12px}
+.cv-fx-strength-hints {display:flex;justify-content:space-between;gap:12px;
+  margin-top:-4px;font-size:10px;color:#b4a7c7}
+.cv-fx-strength-hints span:last-child{text-align:right}
+
+@keyframes zeonFxGlow {from{transform:translate(-8%,2%) scale(.92)}to{transform:translate(9%,-5%) scale(1.08)}}
+@keyframes zeonFxSweep {0%,15%{transform:translateX(-85%) rotate(-10deg);opacity:0}45%{opacity:.7}70%,100%{transform:translateX(85%) rotate(-10deg);opacity:0}}
+@keyframes zeonFxWarmth {from{opacity:.6;transform:scale(1)}to{opacity:1;transform:scale(1.12)}}
+@keyframes zeonFxEmber {0%{transform:translate(0,18px) scale(.6);opacity:0}15%{opacity:1}80%{opacity:.85}100%{transform:translate(35px,-185px) scale(.15);opacity:0}}
+@keyframes zeonFxStarField {to{background-position:90px 40px,-80px 50px,65px -65px,center}}
+@keyframes zeonFxMeteor {0%,54%{transform:translate(-125%,50px) rotate(-19deg);opacity:0}58%{opacity:1}71%,100%{transform:translate(320%,130px) rotate(-19deg);opacity:0}}
+@keyframes zeonFxTwinkle {from{opacity:.13;transform:scale(.65)}to{opacity:1;transform:scale(1.4)}}
+@keyframes zeonFxFogA {from{transform:translateX(-10%) scale(.94)}to{transform:translateX(13%) scale(1.05)}}
+@keyframes zeonFxFogB {from{transform:translateX(10%) scale(1.07)}to{transform:translateX(-12%) scale(.95)}}
+@keyframes zeonFxScan {to{background-position:0 0,90% 0}}
+@keyframes zeonFxGlitch {0%,72%,83%,100%{transform:translateX(0);opacity:0}74%,78%{transform:translateX(12px);opacity:.65}80%{transform:translateX(-9px);opacity:.35}}
+@keyframes zeonFxFloat {from{transform:translate(-9px,15px) scale(.85);opacity:.28}to{transform:translate(16px,-33px) scale(1.5);opacity:1}}
+@keyframes zeonFxAuroraA {from{transform:rotate(-13deg) translateX(-9%) scaleX(.88)}to{transform:rotate(-9deg) translateX(9%) scaleX(1.18)}}
+@keyframes zeonFxAuroraB {from{transform:rotate(16deg) translateX(10%) scaleY(.85)}to{transform:rotate(11deg) translateX(-11%) scaleY(1.16)}}
+
+@media (prefers-reduced-motion:reduce) {
+  .cv-page .cv-fx,.cv-page .cv-fx::before,.cv-page .cv-fx::after,
+  .cv-page .cv-fx i {animation:none!important;transition:none!important}
+  .cv-page .cv-page-effect.cv-fx {opacity:.2!important}
+}
+
+/* ================================================================
+   ZEON — Perfil adaptativo + ambientacao em tela cheia
+   O efeito cobre a area do perfil inteira, mesmo quando nao ha cards.
+   A rolagem acontece sobre a camada de fundo, sem cortá-la.
+   ================================================================ */
+.cv-page .cv-full-shell {
+  isolation:isolate;
+  overflow:hidden;
+}
+.cv-page .cv-page-top {
+  position:relative;
+  z-index:3;
+}
+.cv-page .cv-profile-scroll {
+  position:relative;
+  z-index:1;
+  width:100%;
+  min-width:0;
+  min-height:0;
+  box-sizing:border-box;
+  overflow-x:hidden;
+  overflow-y:auto;
+  background:transparent;
+  padding:clamp(12px,2.2vw,24px) clamp(12px,3.2vw,48px) clamp(24px,5vh,56px);
+  container-type:inline-size;
+}
+.cv-page .cv-profile-stage {
+  width:100%;
+  max-width:none;
+  min-width:0;
+  min-height:100%;
+  box-sizing:border-box;
+}
+.cv-page .cv-card-grid {
+  min-width:0;
+}
+/* Para janela estreita, a grade responde a largura realmente disponivel,
+   e nao somente a largura total da tela (que inclui a barra lateral). */
+@container (max-width:760px) {
+  .cv-card-grid { grid-template-columns:minmax(0,1fr); gap:12px; }
+  .cv-hero-content { gap:14px; padding:16px; }
+  .cv-banner { height:clamp(150px,25vh,225px); }
+  .cv-avatar-wrap,.cv-avatar { width:78px;height:78px;flex-basis:78px; }
+  .cv-avatar { font-size:28px; }
+  .cv-identity h2 { font-size:clamp(19px,3.6vw,27px); }
+}
+@container (max-width:390px) {
+  .cv-hero-content { gap:10px; padding:12px; }
+  .cv-avatar-wrap,.cv-avatar { width:60px;height:60px;flex-basis:60px; }
+  .cv-avatar { font-size:22px; }
+  .cv-banner { height:145px; }
+  .cv-card-top {padding-left:13px;padding-right:13px;}
+  .cv-card-content {padding-left:13px;padding-right:13px;}
+}
+@media (max-height:590px) {
+  .cv-page .cv-profile-scroll {padding-top:12px;padding-bottom:24px;}
+  .cv-page .cv-banner {height:clamp(130px,25vh,205px);}
+}

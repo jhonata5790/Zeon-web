@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https: blob:; connect-src 'self' https: wss:; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'" />
+  <title>Zeon — Web</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="unified.css" />
+  <link rel="stylesheet" href="profile-v080.css" />
+  <link rel="stylesheet" href="web-responsive.css" />
+  <script src="share-quality.js" defer></script>
+  <script src="camera-quality.js" defer></script>
+  <script src="media-compat.js" defer></script>
+  <script src="livekit.bundle.js" defer></script>
+  <script src="web-bridge.js" defer></script>
+  <script src="unified.js" defer></script>
+  <script src="profile-v080.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="guild-rail" aria-label="Grupos">
+      <div class="logo" title="Zeon" aria-label="Zeon"><span class="zeon-brand-mark" aria-hidden="true">Z</span></div>
+      <div class="rail-divider"></div>
+      <nav id="groupRail" class="group-rail"></nav>
+      <button class="rail-add" data-action="new-group" title="Criar grupo" aria-label="Criar grupo">+</button>
+      <button class="group-join" data-action="join-group" title="Entrar por convite" aria-label="Entrar por convite">↗</button><div class="rail-spacer"></div>
+      <button class="rail-settings" data-action="settings" title="Configurações" aria-label="Configurações">⚙</button>
+    </aside>
+    <aside class="channel-sidebar">
+      <header class="sidebar-header">
+        <div class="eyebrow">SEU ESPAÇO</div>
+        <h1 id="groupTitle">Meu grupo</h1>
+        <p id="groupSubtitle">Suas salas, sempre disponíveis.</p>
+      </header>
+      <div class="sidebar-scroll">
+        <div id="channelList"></div>
+      </div>
+      <footer class="user-footer">
+        <div class="avatar self-avatar" id="footerAvatar">V</div>
+        <div class="user-info"><strong id="footerName">Você</strong><span>Conta online</span></div>
+        <button class="icon-button" data-action="settings" title="Editar perfil">⚙</button>
+      </footer>
+    </aside>
+    <main class="content-area">
+      <header class="topbar">
+        <div class="breadcrumb">
+          <button id="sidebarToggle" class="toolbar-icon" data-action="toggle-sidebar" aria-label="Abrir ou fechar canais" title="Mostrar ou ocultar canais">☰</button>
+          <span class="crumb-icon" id="channelGlyph">#</span>
+          <span id="channelName">Chat 1</span>
+          <span class="divider-dot">/</span>
+          <span class="crumb-muted" id="channelKind">Texto</span>
+        </div>
+        <div class="top-actions"><button type="button" id="signOutBtn" class="small-button" title="Sair da conta">Sair</button>
+          <span class="status-pill" id="netStatus"><span class="pulse-dot"></span> Conectando...</span>
+          <button id="inviteButton" class="small-button" data-action="invite-message">✉ Chamar por mensagem</button>
+          <button id="callChatToggle" class="small-button" data-action="toggle-call-chat" aria-pressed="false">☰ Chat da call</button>
+        </div>
+      </header>
+      <section class="workspace" id="workspace"></section>
+      <footer class="call-dock" id="callDock"></footer>
+    </main>
+    <aside class="chat-panel" aria-label="Chat da chamada">
+      <div class="chat-heading"><div><span class="eyebrow">CHAT DA CALL</span><h2>Mensagens</h2><small id="callChatRoomName"></small></div><button class="toolbar-icon" data-action="toggle-call-chat" aria-label="Fechar chat da call">✕</button></div>
+      <div class="chat-note">Mensagens somente deste canal de voz, não do Chat 1.</div>
+      <div id="callMessages" class="messages"></div>
+      <form id="callChatForm" class="chat-form"><input id="callChatInput" maxlength="700" autocomplete="off" placeholder="Mensagem na call..." aria-label="Mensagem da call"/><button type="submit" aria-label="Enviar">➤</button></form>
+      <div class="chat-footnote">Mensagens enviadas somente aos membros deste canal.</div>
+    </aside>
+  </div>
+  <dialog class="consivo-dialog" id="capturePicker" aria-labelledby="captureTitle">
+    <div class="consivo-dialog-header"><div><span class="eyebrow">ZEON · COMPARTILHAR</span><h2 id="captureTitle">Escolha o que transmitir</h2><p>Escolha uma fonte. A transmissão será enviada à chamada online.</p></div><button type="button" class="consivo-dialog-close" data-action="close-capture" aria-label="Fechar seletor">✕</button></div>
+    <div class="consivo-dialog-body">
+      <div class="capture-tabs" role="group" aria-label="Tipo de transmissão">
+        <button type="button" class="capture-tab active" data-action="source-filter" data-type="screen" aria-pressed="true">Monitores</button>
+        <button type="button" class="capture-tab" data-action="source-filter" data-type="window" aria-pressed="false">Janelas</button>
+      </div>
+      <section class="consivo-quality-section" aria-label="Qualidade da captura">
+        <div class="consivo-quality-grid">
+          <label class="consivo-setting" for="captureResolution">Resolução
+            <select id="captureResolution">
+              <option value="480">480p</option>
+              <option value="720">720p</option>
+              <option value="1080">1080p · Full HD</option>
+              <option value="1440">1440p · QHD</option>
+            </select>
+          </label>
+          <label class="consivo-setting" for="captureFps">FPS
+            <select id="captureFps">
+              <option value="15">15 FPS</option>
+              <option value="30">30 FPS</option>
+              <option value="60">60 FPS</option>
+            </select>
+          </label>
+        </div>
+        <p class="consivo-help">Selecione a fonte abaixo para limitar resoluções acima do monitor, quando o navegador informar suas dimensões. FPS máximos da captura só podem ser verificados após iniciar.</p>
+        <p id="captureQualityStatus" class="consivo-quality-status" role="status"></p>
+      </section>
+      <div id="captureSources" class="capture-source-grid" aria-live="polite"><p class="consivo-help">Carregando opções...</p></div>
+      <div class="consivo-dialog-actions"><button id="captureStartButton" class="primary-button" type="button" data-action="start-capture" disabled>Iniciar captura selecionada</button></div>
+      <div class="consivo-dialog-actions"><button type="button" class="consivo-mini-button" data-action="refresh-sources">Atualizar lista</button></div>
+    </div>
+  </dialog>
+  <dialog class="consivo-dialog" id="devicesDialog" aria-labelledby="devicesTitle">
+    <div class="consivo-dialog-header"><div><span class="eyebrow">ZEON · DISPOSITIVOS</span><h2 id="devicesTitle">Áudio e vídeo</h2><p>Escolha os dispositivos usados na chamada online.</p></div><button type="button" class="consivo-dialog-close" data-action="close-devices" aria-label="Fechar configurações">✕</button></div>
+    <div class="consivo-dialog-body">
+      <label class="consivo-setting" for="micSelect">Microfone<select id="micSelect"><option value="">Padrão do dispositivo</option></select></label>
+      <div class="consivo-setting-row"><span class="consivo-help">Teste de nível de microfone</span><button class="consivo-mini-button" type="button" data-action="test-mic" id="micTestButton">Iniciar teste</button></div>
+      <div class="consivo-meter" aria-label="Indicador de nível do microfone"><div id="micMeter"></div></div>
+      <label class="consivo-setting" for="cameraSelect">Câmera<select id="cameraSelect"><option value="">Padrão do dispositivo</option></select></label>
+      <section class="consivo-quality-section consivo-camera-section" aria-labelledby="cameraQualityTitle">
+        <h3 id="cameraQualityTitle">Qualidade da câmera</h3>
+        <div class="consivo-setting-row">
+          <span class="consivo-help">Identifique as combinações que sua webcam aceita.</span>
+          <button type="button" class="consivo-mini-button" id="cameraScanButton" data-action="scan-camera">Verificar compatibilidade</button>
+        </div>
+        <p id="cameraCompatibilityStatus" role="status" aria-live="polite" class="consivo-compat-status">Ainda não verificada. Para habilitar as opções de qualidade, clique em Verificar compatibilidade. A câmera será ligada temporariamente, apenas para o teste local.</p>
+        <div class="consivo-quality-grid">
+          <label class="consivo-setting" for="cameraResolution">Resolução
+            <select id="cameraResolution">
+              <option value="480">480p · SD</option>
+              <option value="720">720p · HD</option>
+              <option value="1080">1080p · Full HD</option>
+            </select>
+          </label>
+          <label class="consivo-setting" for="cameraFps">Quadros por segundo
+            <select id="cameraFps">
+              <option value="15">15 FPS</option>
+              <option value="30">30 FPS</option>
+              <option value="60">60 FPS</option>
+            </select>
+          </label>
+        </div>
+        <div class="consivo-setting-row consivo-camera-options">
+          <label class="consivo-camera-check"><input id="cameraMirror" type="checkbox" checked/> Espelhar minha prévia</label>
+          <label class="consivo-setting consivo-camera-fit" for="cameraFit">Enquadramento
+            <select id="cameraFit"><option value="cover">Preencher o card</option><option value="contain">Mostrar imagem inteira</option></select>
+          </label>
+        </div>
+        <p class="consivo-help">As opções de qualidade são habilitadas após o teste da webcam; o sistema pode limitar combinações específicas. Não é uma medição de desempenho sustentado. Espelhamento e enquadramento são locais.</p>
+        <p class="consivo-quality-status" id="cameraQualityStatus" role="status" aria-live="polite"></p>
+      </section>
+      <div class="consivo-setting-row"><span class="consivo-help">Prévia da câmera local</span><button class="consivo-mini-button" type="button" data-action="test-camera" id="cameraTestButton">Testar câmera</button></div>
+      <video id="settingsCamera" class="consivo-camera-preview" autoplay muted playsinline></video>
+      <label class="consivo-setting" for="speakerSelect">Saída de áudio<select id="speakerSelect"><option value="">Padrão do dispositivo</option></select></label>
+      <label class="consivo-setting" for="volumeRange">Volume padrão de chamadas: <span id="volumeNumber">75%</span><input id="volumeRange" type="range" min="0" max="100" value="75"/></label>
+      <section class="consivo-quality-section" aria-labelledby="shareQualityTitle">
+        <h3 id="shareQualityTitle">Qualidade da transmissão</h3>
+        <div class="consivo-quality-grid">
+          <label class="consivo-setting" for="shareResolution">Resolução
+            <select id="shareResolution">
+              <option value="480">480p · Econômica</option>
+              <option value="720">720p · HD</option>
+              <option value="1080">1080p · Full HD</option>
+              <option value="1440">1440p · QHD</option>
+            </select>
+          </label>
+          <label class="consivo-setting" for="shareFps">Quadros por segundo
+            <select id="shareFps">
+              <option value="15">15 FPS</option>
+              <option value="30">30 FPS</option>
+              <option value="60">60 FPS</option>
+            </select>
+          </label>
+        </div>
+        <p class="consivo-help">Uma resolução acima do monitor selecionado será bloqueada quando detectável. Para FPS, os limites declarados pelo sistema são aplicados após iniciar a captura; o desempenho real pode variar.</p>
+        <p id="shareQualityStatus" class="consivo-quality-status" role="status"></p>
+      </section>
+      <p class="consivo-help">Suas preferências de áudio e vídeo ficam salvas neste navegador.</p>
+      <div class="consivo-dialog-actions"><button type="button" class="consivo-mini-button" data-action="close-devices">Concluir</button></div>
+    </div>
+  </dialog>
+  <dialog id="modal" class="modal"><form method="dialog" id="modalForm">
+    <div class="modal-heading"><div class="eyebrow">ZEON · CONFIGURAR</div><h2 id="modalTitle">Novo grupo</h2><p id="modalHint"></p></div>
+    <label for="modalInput" id="modalLabel">Nome</label><input id="modalInput" maxlength="48" required autocomplete="off" />
+    <label id="adminOnlyLine" class="modal-checkline" hidden><input type="checkbox" id="adminOnlyInput"/> Somente administradores podem enviar mensagens</label>
+    <div class="modal-buttons"><button class="secondary-button" value="cancel" type="button" id="cancelModal">Cancelar</button><button class="primary-button" id="submitModal" type="submit">Salvar</button></div>
+  </form></dialog>
+  <div role="status" aria-live="polite" id="toast" class="toast"></div>
+
+<div id="authGate" class="auth-gate" role="region" aria-label="Acesso ao Zeon">
+  <section class="auth-panel">
+    <div class="auth-logo zeon-login-mark" aria-hidden="true">Z</div>
+    <div id="loadingScreen"><h2>Zeon</h2><p>Conectando à sua conta...</p></div>
+    <div id="setupScreen" hidden><h2>Configurar Zeon</h2><p>Use a URL e a chave pública de seu projeto Supabase. Nunca use service_role.</p>
+      <form id="setupForm"><label for="projectUrl">URL do projeto</label><input id="projectUrl" type="url" required placeholder="https://xxxx.supabase.co"/>
+      <label for="projectKey">Chave pública</label><input id="projectKey" required placeholder="sb_publishable_..." autocomplete="off"/>
+      <button type="submit">Conectar</button></form></div>
+    <div id="loginScreen" hidden><h2>Entrar no Zeon</h2><p>Entre para acessar seus grupos, canais e chamadas.</p>
+      <form id="loginForm"><label for="accountEmail">Email</label><input id="accountEmail" type="email" autocomplete="email" required/>
+      <label for="accountPassword">Senha</label><input id="accountPassword" type="password" minlength="8" autocomplete="current-password" required/>
+      <button type="submit">Entrar</button></form>
+      <div class="auth-secondary-actions"><button class="auth-button" id="signupBtn" type="button">Criar conta</button><button class="auth-button" id="changeBackendBtn" type="button">Configurar serviço</button></div></div>
+  </section>
+</div>
+<div id="remoteAudio" hidden aria-hidden="true"></div>
+</body>
+</html>

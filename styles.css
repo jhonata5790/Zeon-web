@@ -1,0 +1,596 @@
+:root{font-family:Inter,'Segoe UI',Arial,sans-serif;color:#e8eefc;background:#0a0e17;font-synthesis:none;--bg:#0b1019;--sidebar:#101722;--rail:#080d16;--border:#242c3b;--muted:#8592a9;--primary:#8f82f7;--primary-soft:#241f44;--green:#4fdda8}
+*{box-sizing:border-box}body{margin:0;min-width:950px;min-height:600px}button,input{font:inherit}button{cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed}button:focus-visible,input:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.app-shell{display:grid;grid-template-columns:74px 254px minmax(330px,1fr) 320px;width:100vw;height:100vh;overflow:hidden}
+.guild-rail{display:flex;align-items:center;flex-direction:column;gap:14px;padding:20px 9px 16px;background:var(--rail);border-right:1px solid #1c2432}.logo{width:48px;height:48px;border-radius:16px;background:linear-gradient(140deg,#9588ff,#6e60e6);display:grid;place-items:center;font-size:27px;font-weight:900;letter-spacing:-2px;color:white;box-shadow:0 8px 28px #6556ec3b}.logo span{color:#d3cfff}.rail-divider{height:1px;width:30px;background:#2c3444}.group-rail{width:100%;display:flex;flex-direction:column;gap:12px;align-items:center;overflow-y:auto}.group-chip{width:45px;height:45px;border:1px solid #334055;border-radius:17px;background:#172033;color:#c4cde0;font-size:17px;font-weight:700;position:relative;transition:.15s}.group-chip:hover,.group-chip.selected{background:#322c5e;color:#fff;border-color:#857af4;border-radius:14px}.group-chip.selected:before{content:'';position:absolute;width:4px;height:30px;background:#a59bff;top:7px;left:-15px;border-radius:6px}.rail-add,.rail-settings{width:43px;height:43px;border-radius:15px;background:#182a26;color:#72e4b8;border:1px dashed #416c5e;font-size:26px}.rail-settings{background:#171e2c;border:1px solid #283243;color:#adb6ca;font-size:21px}.rail-spacer{flex:1}
+.channel-sidebar{display:flex;flex-direction:column;min-height:0;background:#101722;border-right:1px solid var(--border)}.sidebar-header{padding:29px 20px 24px;border-bottom:1px solid var(--border)}.eyebrow{font-size:10px;letter-spacing:2px;color:#978cf0;font-weight:800}.sidebar-header h1{font-size:22px;margin:9px 0 5px;max-width:205px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sidebar-header p{color:var(--muted);font-size:12px;margin:0}.sidebar-scroll{padding:22px 11px;overflow:auto;flex:1}.section-label{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#79869c;font-weight:750;letter-spacing:1.2px;padding:0 12px 9px}.text-plus{border:0;background:transparent;color:#9b8ffa;font-size:23px;line-height:16px}.room-entry{display:flex;width:100%;align-items:center;gap:9px;padding:11px 9px;border:1px solid transparent;border-radius:10px;background:transparent;color:#a2aec2;text-align:left;margin-bottom:3px}.room-entry:hover{background:#1c2638}.room-entry.active{color:#f4f1ff;background:#292440;border-color:#4b4175}.room-symbol{font-size:19px;color:#958ae4}.room-name{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}.room-count{font-size:11px;color:#94a0b4}.room-delete{border:0;color:#a0a9c1;background:transparent;font-size:16px;padding:0 4px}.sidebar-hint{margin:24px 9px;background:#1d2540;border:1px solid #34335c;border-radius:10px;padding:14px 13px;font-size:11px;line-height:1.7;color:#b4b9da}.sparkle{color:#c4b9ff}.members-title{margin-top:15px}.local-tag{font-size:9px;letter-spacing:1px;background:#253342;color:#8fbdca;padding:3px 6px;border-radius:5px}.member{display:flex;align-items:center;gap:10px;margin:9px 12px;color:#c3ccde;font-size:12px}.avatar{border-radius:50%;background:linear-gradient(135deg,#4f64bd,#9a7ded);color:white;width:34px;height:34px;display:grid;place-items:center;font-weight:700;font-size:14px;flex-shrink:0}.member small{color:#7d8a9e;display:block;margin-top:3px}.user-footer{display:flex;align-items:center;gap:9px;padding:16px 12px;background:#0d131f;border-top:1px solid var(--border)}.user-info{display:flex;flex-direction:column;min-width:0;flex:1}.user-info strong{font-size:12px;overflow:hidden;text-overflow:ellipsis}.user-info span{font-size:10px;color:#7d8a9e;margin-top:3px}.icon-button{border:0;background:transparent;color:#909eb7;font-size:18px}
+.content-area{display:flex;flex-direction:column;min-width:0;background:radial-gradient(ellipse at 54% 30%,#181b33 0%,#0e1420 54%,#0b1019 100%)}.topbar{height:70px;min-height:70px;padding:0 26px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #222a3b}.breadcrumb{display:flex;align-items:center;gap:9px;font-weight:700;font-size:14px}.crumb-icon{color:#a397ff;font-size:26px}.divider-dot{color:#525c74;margin:0 3px}.crumb-muted{font-size:12px;color:#8592ac;font-weight:450}.top-actions{display:flex;align-items:center;gap:12px}.status-pill{display:flex;gap:8px;align-items:center;font-size:9px;letter-spacing:1px;border:1px solid #324244;background:#17262a;padding:9px 12px;border-radius:30px;color:#8dcdb4;font-weight:700}.pulse-dot{height:6px;width:6px;background:var(--green);border-radius:50%;box-shadow:0 0 12px var(--green)}.small-button{background:#242d41;border:1px solid #404763;padding:10px 12px;border-radius:9px;color:#dcdff4;font-size:11px;font-weight:700}.small-button:hover{background:#303952}
+.workspace{overflow-y:auto;flex:1;padding:28px 35px 24px}.hero{display:flex;justify-content:space-between;gap:10px;align-items:start}.hero-label{color:#9b90ef;text-transform:uppercase;font-size:10px;font-weight:800;letter-spacing:2px}.hero h2{font-size:clamp(26px,3vw,39px);font-weight:800;letter-spacing:-1.5px;margin:10px 0 8px}.hero p{color:#92a0b6;font-size:13px;margin:0;line-height:1.6}.hero-badge{background:#242541;color:#bcb6ef;border:1px solid #45416c;padding:9px 12px;font-size:11px;border-radius:9px;white-space:nowrap}.room-stage{margin-top:24px;min-height:258px;border:1px solid #30334c;border-radius:20px;position:relative;overflow:hidden;background:radial-gradient(circle at 50% 40%,#292451,#161b31 63%,#111725 100%);display:flex;align-items:center;justify-content:center}.room-stage:before{content:'';position:absolute;width:260px;height:260px;top:-115px;right:-100px;border-radius:50%;background:#8467f522;filter:blur(20px)}.room-stage:after{content:'';position:absolute;width:220px;height:220px;bottom:-140px;left:-40px;border-radius:50%;background:#34d3d323;filter:blur(20px)}.orbital{height:155px;width:155px;border-radius:50%;border:1px solid #706cad77;display:grid;place-items:center;box-shadow:0 0 50px #5e56ac25,inset 0 0 42px #59409a33;position:relative;z-index:1;animation:float 5s ease-in-out infinite}.orbital:before{content:'';position:absolute;border-radius:50%;inset:-15px;border:1px dashed #55527466;animation:spin 35s linear infinite}.wave-icon{font-size:55px;color:#c0b4ff;text-shadow:0 0 22px #9c8aff90}.stage-copy{position:absolute;bottom:20px;left:23px;right:23px;z-index:2;display:flex;align-items:flex-end;justify-content:space-between;gap:10px}.stage-copy strong{font-size:14px;display:block}.stage-copy p{font-size:11px;color:#98a3bb;margin:5px 0 0;max-width:320px}.glass-chip{border:1px solid #545173;background:#282a48cc;padding:7px 10px;border-radius:10px;color:#c2bbf9;font-size:10px}.join-row{margin-top:22px;display:flex;gap:11px;flex-wrap:wrap}.primary-button,.secondary-button{border-radius:10px;border:1px solid transparent;background:#897bf3;color:#fff;padding:12px 18px;font-size:13px;font-weight:750;box-shadow:0 7px 22px #6858d133}.primary-button:hover{background:#a195ff}.secondary-button{background:#20283b;border-color:#37415c;box-shadow:none;color:#d5dded}.secondary-button:hover{background:#2a344b}.outline-danger{border:1px solid #70445d;background:#352130;color:#f0a4bc}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:22px}.info-card{border:1px solid #29354a;background:#141d2cbd;border-radius:15px;padding:17px;min-height:124px}.info-card h3{margin:5px 0 8px;font-size:13px}.info-card p{font-size:11px;line-height:1.6;color:#90a0b7;margin:0}.card-icon{display:inline-grid;place-items:center;width:31px;height:31px;background:#292849;border:1px solid #45416a;border-radius:10px;color:#b4a5ff;font-size:16px}.connected-title{font-size:12px;color:#9ca9bd;letter-spacing:1px;text-transform:uppercase;font-weight:800;margin:26px 0 12px}.participant-card{display:flex;align-items:center;gap:12px;padding:15px;border:1px solid #333e55;border-radius:13px;background:#171f30;max-width:290px}.participant-card strong{font-size:13px}.participant-card small{display:block;font-size:11px;color:#899bb4;margin-top:4px}.participant-badge{font-size:10px;color:#74e6b2;margin-left:auto}.call-dock{margin:0 35px 22px;border:1px solid #34354b;background:#151a2ae8;min-height:76px;border-radius:15px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 16px}.call-state{display:flex;align-items:center;gap:11px}.call-state strong{font-size:13px;display:block}.call-state small{font-size:10px;color:#95a4b9;display:block;margin-top:3px}.call-indicator{border-radius:12px;width:38px;height:38px;display:grid;place-items:center;background:#2c294a;color:#ada1fc;font-size:18px}.call-buttons{display:flex;gap:8px}.dock-button{min-width:37px;height:37px;border-radius:10px;border:1px solid #444962;background:#2a3045;color:#d9e0ee;padding:0 11px;font-size:14px}.dock-button:hover{background:#39425d}.dock-button.off{color:#ffb4ca;background:#492d3b}.dock-button.end{background:#78364a;border-color:#995267;color:#fff}.dock-button.purple{background:#6558bd;border-color:#8275de}.dock-button span{font-size:11px;font-weight:700}
+.chat-panel{display:flex;flex-direction:column;background:#101722;border-left:1px solid var(--border);min-height:0}.chat-heading{padding:28px 22px 8px;display:flex;align-items:center;justify-content:space-between}.chat-heading h2{margin:7px 0;font-size:20px}.chat-icon{font-size:23px;color:#8f83d8}.chat-note{font-size:11px;line-height:1.55;color:#8393aa;margin:0 22px;padding-bottom:16px;border-bottom:1px solid #283144}.messages{flex:1;overflow-y:auto;padding:18px 18px 4px;display:flex;flex-direction:column;gap:16px}.message{display:flex;gap:10px}.message .avatar{width:29px;height:29px;font-size:11px}.message-meta{font-size:11px;color:#bfc9db;font-weight:700}.message-meta time{font-weight:400;color:#73829a;font-size:10px;margin-left:5px}.message-text{font-size:12px;line-height:1.65;color:#cbd5e5;overflow-wrap:anywhere;margin-top:5px}.chat-empty{margin:auto;text-align:center;max-width:210px;color:#7f8ca2}.chat-empty .bubble{font-size:36px;opacity:.8;margin-bottom:12px}.chat-empty strong{display:block;color:#ced5e3;font-size:13px}.chat-empty p{font-size:11px;line-height:1.8}.chat-form{display:flex;margin:13px 15px 5px;border-radius:11px;border:1px solid #34415b;background:#1a2536;padding:4px 5px}.chat-form input{min-width:0;flex:1;background:transparent;border:0;color:#e0e8f7;padding:11px;font-size:12px;outline:0}.chat-form button{border:0;background:#7668db;color:#fff;border-radius:7px;padding:0 12px;font-size:16px}.chat-footnote{text-align:center;color:#6e7b92;font-size:10px;padding:9px 10px 17px}.modal{width:min(410px,calc(100vw - 30px));border:1px solid #454060;border-radius:19px;padding:27px;background:#161e2d;color:#e9ecff;box-shadow:0 30px 100px #000a}.modal::backdrop{background:#060912c9}.modal-heading h2{margin:9px 0;font-size:23px}.modal-heading p{font-size:12px;color:#96a4bb;line-height:1.6}.modal label{display:block;color:#bfc7dc;margin:24px 0 7px;font-size:12px}.modal input{padding:13px 12px;border:1px solid #465171;border-radius:9px;background:#111a2a;color:white;width:100%;font-size:14px}.modal-buttons{display:flex;justify-content:flex-end;gap:10px;margin-top:23px}.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);padding:13px 19px;border:1px solid #4c5372;background:#242b40;border-radius:12px;box-shadow:0 10px 34px #0008;color:#e3e8ff;font-size:12px;opacity:0;pointer-events:none;transition:.2s;z-index:5}.toast.visible{opacity:1;transform:translateX(-50%) translateY(0)}@keyframes float{50%{transform:translateY(-9px)}}@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:1200px){.app-shell{grid-template-columns:67px 228px minmax(320px,1fr) 275px}.workspace{padding:24px}.call-dock{margin:0 24px 20px}.top-actions .status-pill{display:none}}@media(max-width:1050px){.app-shell{grid-template-columns:67px 228px minmax(320px,1fr)}.chat-panel{display:none}.two-col{grid-template-columns:1fr 1fr}}
+.preview-video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#050811;z-index:1}.room-stage.video-active{background:#050811}.room-stage.video-active .stage-copy{background:linear-gradient(0deg,#000b,transparent);padding:25px 14px 8px;left:0;right:0;bottom:0}
+
+.room-entry-wrap{display:flex;align-items:center;min-width:0}.room-entry-wrap .room-entry{flex:1;width:auto;min-width:0}.room-entry-wrap .room-delete{flex-shrink:0}
+
+/* ===== TEMA CONSIVO ===== */
+:root {
+  --bg: #0B0B14;
+  --rail: #090911;
+  --sidebar: #141420;
+  --surface: #191927;
+  --border: #303047;
+  --primary: #8B5CF6;
+  --primary-soft: #2B214B;
+  --secondary: #477BFF;
+  --text: #F7F7FF;
+  --muted: #A3A3BD;
+
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* Estrutura principal */
+.guild-rail {
+  background: var(--rail);
+  border-right-color: var(--border);
+}
+
+.channel-sidebar,
+.chat-panel {
+  background: var(--sidebar);
+  border-color: var(--border);
+}
+
+.user-footer {
+  background: var(--rail);
+  border-color: var(--border);
+}
+
+.content-area {
+  background: radial-gradient(
+    ellipse at 54% 30%,
+    #1E1833 0%,
+    #10101C 56%,
+    var(--bg) 100%
+  );
+}
+
+/* Transmissão e painéis */
+.room-stage {
+  background: radial-gradient(
+    circle at center,
+    #31254A,
+    #171627 60%,
+    #10101A 100%
+  );
+  border-color: var(--border);
+}
+
+.info-card,
+.call-dock {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+/* Grupos e salas selecionados */
+.group-chip.selected,
+.group-chip:hover,
+.room-entry.active {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--text);
+}
+
+/* Botões */
+.primary-button,
+.chat-form button {
+  background: var(--primary);
+}
+
+.primary-button:hover {
+  background: #A78BFA;
+}
+
+.secondary-button,
+.dock-button,
+.small-button {
+  background: #25253A;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+/* Mensagens */
+.chat-form {
+  background: #24243A;
+  border-color: var(--border);
+}
+
+.chat-form input {
+  color: var(--text);
+}
+  
+/* Ícone oficial do Consivo */
+.logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  background: #08080F;
+  border: 1px solid #303047;
+  box-shadow: none;
+  padding: 0;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+
+/* CONSIVO CANAIS v0.2 — INÍCIO */
+/* Layout flexível: grupos | canais | conteúdo | chat da call (opcional) */
+.app-shell{grid-template-columns:74px 254px minmax(0,1fr)}
+.app-shell.call-chat-open{grid-template-columns:74px 254px minmax(0,1fr) 320px}
+.app-shell.sidebar-hidden{grid-template-columns:74px minmax(0,1fr)}
+.app-shell.sidebar-hidden.call-chat-open{grid-template-columns:74px minmax(0,1fr) 320px}
+.app-shell.sidebar-hidden .channel-sidebar{display:none}
+.app-shell:not(.call-chat-open) .chat-panel{display:none}
+.app-shell.call-chat-open .chat-panel{display:flex}
+#callDock[hidden], #callChatToggle[hidden], #inviteButton[hidden], #adminOnlyLine[hidden]{display:none!important}
+.toolbar-icon{border:1px solid var(--border);background:var(--surface,#191927);color:var(--text,#F7F7FF);border-radius:9px;min-width:34px;height:34px;display:inline-grid;place-items:center;cursor:pointer}
+.toolbar-icon:hover{background:#30274A;color:#fff}
+#sidebarToggle{margin-right:6px;font-size:16px}
+#callChatToggle[aria-pressed="true"]{background:var(--primary-soft,#2B214B);border-color:var(--primary,#8B5CF6)}
+.channel-list{margin-bottom:22px}
+.channel-lock{font-size:10px;color:var(--secondary,#477BFF)}
+.room-entry{min-height:39px}
+.sidebar-scroll{padding-top:24px}
+#channelList>.section-label:not(:first-child){margin-top:18px}
+.chat-heading small{font-size:11px;color:var(--muted,#A3A3BD);display:block;padding-top:3px}
+.chat-heading .toolbar-icon{align-self:flex-start}
+/* O canal de texto usa o espaço central completo. */
+.workspace.text-workspace{padding:0;overflow:hidden;display:flex;min-height:0}
+.text-channel-view{height:100%;min-height:0;width:100%;display:flex;flex-direction:column}
+.text-channel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:28px 35px 20px;border-bottom:1px solid var(--border,#303047)}
+.text-channel-heading h2{font-size:30px;margin:9px 0 6px;letter-spacing:-.7px}
+.text-channel-heading p{margin:0;color:var(--muted,#A3A3BD);font-size:12px}
+.text-messages{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:17px;padding:24px 35px}
+.text-messages .chat-empty{max-width:340px}
+.text-messages .message-text{font-size:14px}
+.text-messages .message-meta{font-size:12px}
+.text-composer{margin:0 35px 9px;display:flex;align-items:center;gap:8px;background:#24243A;border:1px solid var(--border,#303047);border-radius:12px;padding:6px}
+.text-composer input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--text,#F7F7FF);padding:12px;font-size:13px}
+.text-composer button{background:var(--primary,#8B5CF6);color:#fff;border:0;border-radius:9px;height:35px;min-width:42px;font-size:17px}
+.channel-local-note{text-align:center;color:var(--muted,#A3A3BD);font-size:10px;padding:3px 0 15px}
+.modal-checkline{display:flex!important;align-items:center;gap:9px;margin:14px 0 0!important}
+.modal-checkline input{width:16px!important;height:16px!important;flex-shrink:0;accent-color:var(--primary,#8B5CF6)}
+/* Janela pequena: o chat da call vira uma gaveta sobre a interface, quando aberto. */
+@media(max-width:1200px){
+  .app-shell{grid-template-columns:67px 228px minmax(0,1fr)}
+  .app-shell.sidebar-hidden{grid-template-columns:67px minmax(0,1fr)}
+  .app-shell.call-chat-open{grid-template-columns:67px 228px minmax(0,1fr)}
+  .app-shell.sidebar-hidden.call-chat-open{grid-template-columns:67px minmax(0,1fr)}
+  .app-shell.call-chat-open .chat-panel{position:absolute;right:0;top:0;bottom:0;width:min(320px,calc(100vw - 67px));z-index:9;box-shadow:-12px 0 35px #0007}
+  .app-shell{position:relative}
+  .text-channel-heading{padding:22px}
+  .text-messages{padding:22px}
+  .text-composer{margin:0 22px 9px}
+}
+@media(max-width:1050px){.app-shell.call-chat-open .chat-panel{display:flex}}
+/* CONSIVO CANAIS v0.2 — FIM */
+
+
+
+/* CONSIVO v0.3 — sala de voz minimalista */
+.workspace.voice-workspace{
+  display:flex;align-items:stretch;justify-content:center;
+  overflow:hidden;padding:0;min-height:0;
+}
+.voice-view{
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  gap:48px;width:100%;min-height:100%;padding:32px;
+  background:radial-gradient(ellipse at 50% 44%,#21192f 0%,#141322 48%,transparent 82%);
+}
+.voice-participants{width:100%;min-height:185px;display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:28px}
+.voice-person{display:flex;align-items:center;flex-direction:column;gap:12px}
+.voice-profile{height:142px;width:142px;position:relative;overflow:hidden;display:grid;place-items:center;
+  border-radius:38px;border:2px solid #5d4c8a;background:linear-gradient(145deg,#4a307a,#477BFF);
+  box-shadow:0 12px 46px #0004;}
+.voice-avatar{font-size:62px;font-weight:750;color:#fff;line-height:1}
+.voice-person-name{color:#F7F7FF;font-size:14px;font-weight:700}
+.self-camera{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.voice-sharing{position:absolute;right:7px;bottom:7px;width:32px;height:32px;display:grid;place-items:center;
+  border-radius:10px;color:#fff;background:#477BFF;border:1px solid #a4b9ff}
+.voice-sharing svg{width:19px;height:19px}
+.voice-empty{display:grid;place-items:center;color:#696580;border:1px dashed #343047;border-radius:38px;width:142px;height:142px}
+.voice-empty svg{width:46px;height:46px}
+.voice-controls{display:flex;align-items:center;justify-content:center;gap:18px}
+.voice-control{display:grid;place-items:center;width:70px;height:70px;border-radius:23px;
+  border:1px solid #49415f;background:#242036;color:#ded7f5;
+  transition:background .16s,border-color .16s,transform .16s;}
+.voice-control:hover:not(:disabled){background:#312749;border-color:#8B5CF6;transform:translateY(-2px)}
+.voice-control.on{background:#302451;border-color:#8B5CF6;color:#d4c2ff}
+.voice-control.sharing{background:#233961;border-color:#477BFF;color:#d5e3ff}
+.voice-control.off{color:#9c98b3}
+.voice-control:disabled{opacity:.38;cursor:not-allowed}
+.voice-control:focus-visible{outline:2px solid #8B5CF6;outline-offset:4px}
+.call-buttons .dock-button svg{width:20px;height:20px;display:block}
+@media(max-height:650px){.voice-view{gap:24px;padding:16px}.voice-profile,.voice-empty{width:110px;height:110px}.voice-avatar{font-size:48px}.voice-control{width:58px;height:58px}}
+/* CONSIVO v0.3 — fim */
+
+
+/* CONSIVO v0.4 — cards grandes e transmissão destacada */
+/* Isolado na view de chamada: não mexe no tema, nos canais nem no chat. */
+.workspace.voice-workspace{
+  display:flex;
+  align-items:stretch;
+  justify-content:stretch;
+  padding:0;
+  overflow:hidden;
+  min-height:0;
+}
+.call-layout{
+  width:100%; height:100%; min-height:0;
+  display:grid; grid-template-rows:minmax(0,1fr) auto;
+  gap:15px;
+  padding:20px 26px 18px;
+  background:radial-gradient(ellipse at 50% 18%,#21192f 0%,#141322 55%,transparent 100%);
+}
+.call-participants{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));
+  gap:14px;
+  min-height:0;
+  width:100%;
+}
+.call-person-card, .call-empty-card{
+  position:relative;
+  min-width:0; min-height:0; width:100%; height:100%;
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+  border-radius:20px;
+  border:1px solid #3d3654;
+  background:radial-gradient(ellipse at 50% 40%,#302445 0%,#191729 54%,#10101b 100%);
+  box-shadow:0 9px 35px #0002;
+}
+.call-person-avatar{
+  display:grid; place-items:center;
+  width:clamp(76px,13vh,128px); height:clamp(76px,13vh,128px);
+  flex-shrink:0;
+  border-radius:50%;
+  border:2px solid #A89AEE;
+  background:linear-gradient(145deg,#6551B8,#477BFF);
+  box-shadow:0 0 0 8px #8B5CF612,0 12px 44px #0005;
+  color:#FFF;
+  font-size:clamp(30px,6vh,58px);
+  font-weight:750;
+}
+.call-person-video{
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  object-fit:cover; transform:scaleX(-1);
+  background:#090913;
+}
+.call-person-info{
+  position:absolute; left:14px; bottom:14px; z-index:2;
+  display:flex; align-items:center;
+  max-width:calc(100% - 65px);
+  padding:7px 11px;
+  border-radius:9px;
+  background:#090A14CA;
+  border:1px solid #ffffff1e;
+  backdrop-filter:blur(7px);
+}
+.call-person-name{
+  color:#F7F7FF; font-size:13px; font-weight:700;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.call-person-broadcast-icon{
+  position:absolute; right:13px; bottom:13px; z-index:2;
+  display:grid; place-items:center;
+  height:34px; width:34px;
+  border-radius:10px;
+  background:#477BFF; color:#fff;
+  box-shadow:0 4px 12px #0006;
+}
+.call-person-broadcast-icon svg{width:19px;height:19px}
+.call-empty-card{
+  flex-direction:column; gap:15px;
+  color:#A3A3BD; font-size:13px;
+  border-style:dashed;
+}
+.call-empty-icon svg{width:48px;height:48px}
+.call-layout .voice-controls{
+  flex-shrink:0;
+  justify-self:center;
+  gap:14px;
+  padding:0 0 2px;
+}
+.call-layout .voice-control{
+  width:58px; height:58px;
+  border-radius:18px;
+}
+.call-layout .voice-control svg{width:25px;height:25px}
+/* Um retângulo separado ganha destaque quando há compartilhamento de tela. */
+.call-layout.is-sharing{
+  grid-template-rows:minmax(130px,1fr) minmax(86px,135px) auto;
+  gap:11px;
+  padding:14px 20px;
+}
+.call-broadcast{
+  position:relative; min-width:0; min-height:0;
+  border:1px solid #4868ad;
+  border-radius:17px;
+  overflow:hidden;
+  background:#080910;
+  box-shadow:0 0 0 1px #477BFF22;
+}
+.call-broadcast-video{
+  display:block; width:100%; height:100%;
+  object-fit:contain;
+  background:#090911;
+}
+.broadcast-label{
+  position:absolute; left:12px; bottom:12px; z-index:2;
+  display:flex; align-items:center; gap:8px;
+  max-width:calc(100% - 24px);
+  padding:7px 10px;
+  border-radius:9px;
+  background:#090A15DA;
+  border:1px solid #ffffff26;
+  color:#F7F7FF;
+  font-size:12px; font-weight:650;
+  backdrop-filter:blur(7px);
+}
+.broadcast-label svg{width:18px;height:18px;color:#80A7FF;flex-shrink:0}
+.broadcast-label > span:nth-child(2){white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.broadcast-local{font-size:9px;letter-spacing:.7px;color:#AFC4FF}
+.call-participants--compact{
+  display:flex;
+  align-items:stretch;
+  justify-content:center;
+  overflow-x:auto;
+  gap:10px;
+}
+.call-participants--compact .call-person-card,
+.call-participants--compact .call-empty-card{
+  flex:0 0 clamp(170px,29%,290px);
+  width:auto;
+  border-radius:14px;
+}
+.call-participants--compact .call-person-avatar{
+  height:60px;width:60px;font-size:28px;
+}
+.call-participants--compact .call-person-info{
+  bottom:7px;left:8px;padding:4px 7px;
+}
+.call-participants--compact .call-person-name{font-size:11px}
+.call-participants--compact .call-person-broadcast-icon{
+  bottom:7px;right:8px;height:26px;width:26px;border-radius:7px;
+}
+.call-participants--compact .call-person-broadcast-icon svg{width:15px;height:15px}
+.call-layout.is-sharing .voice-control{width:50px;height:50px;border-radius:15px}
+.call-layout.is-sharing .voice-control svg{width:22px;height:22px}
+@media(max-height:720px){
+  .call-layout{padding:12px 18px;gap:10px}
+  .call-layout .voice-control{width:49px;height:49px;border-radius:15px}
+  .call-layout .voice-control svg{width:21px;height:21px}
+  .call-layout.is-sharing{grid-template-rows:minmax(115px,1fr) minmax(76px,105px) auto;padding:10px 15px;gap:8px}
+  .call-participants--compact .call-person-avatar{height:46px;width:46px;font-size:23px}
+}
+/* CONSIVO v0.4 — fim */
+
+/* CONSIVO v0.5 — layout responsivo da chamada */
+/* A área de vídeo não pode aumentar a altura do grid nem empurrar os botões. */
+.content-area {
+  min-height: 0;
+  overflow: hidden;
+}
+.content-area > .call-dock {
+  flex-shrink: 0;
+}
+.workspace.voice-workspace {
+  position: relative;
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow: hidden;
+}
+.call-layout {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+.call-layout.is-sharing {
+  grid-template-rows: minmax(0, 1fr) clamp(76px, 16%, 135px) auto;
+}
+.call-broadcast,
+.call-participants,
+.call-person-card,
+.call-empty-card {
+  min-height: 0;
+  min-width: 0;
+}
+/* Um vídeo 1080p/4K deve caber dentro do palco, nunca definir a altura dele. */
+.call-broadcast-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  object-fit: contain;
+}
+.call-layout .voice-controls {
+  position: relative;
+  z-index: 2;
+  align-self: end;
+  justify-self: center;
+  min-height: 0;
+  flex-shrink: 0;
+}
+/* Um espaço mínimo para os três controles mesmo com a janela mais baixa. */
+@media (max-height: 740px) {
+  .call-layout { padding: 10px 14px; gap: 8px; }
+  .call-layout.is-sharing {
+    padding: 10px 14px;
+    gap: 8px;
+    grid-template-rows: minmax(0, 1fr) clamp(72px, 17%, 108px) auto;
+  }
+  .call-layout .voice-control { width: 46px; height: 46px; border-radius: 14px; }
+  .call-layout .voice-control svg { width: 21px; height: 21px; }
+  .call-participants--compact .call-person-avatar { width: 44px; height: 44px; font-size: 22px; }
+}
+@media (max-width: 1100px) {
+  .call-layout { padding: 12px 14px; gap: 8px; }
+  .call-layout.is-sharing { padding: 10px 12px; gap: 8px; }
+  .call-layout.is-sharing .voice-controls { gap: 10px; }
+}
+/* CONSIVO v0.5 — fim */
+
+
+/* CONSIVO v0.6 — experiência de chamada e dispositivos */
+/* Transições da lista de canais e do chat. */
+.app-shell{transition:grid-template-columns .22s ease}
+.channel-sidebar,.chat-panel{transition:opacity .18s ease,transform .22s ease}
+.app-shell.sidebar-hidden .channel-sidebar{opacity:0;pointer-events:none}
+.app-shell:not(.call-chat-open) .chat-panel{opacity:0;pointer-events:none}
+.app-shell.call-chat-open .chat-panel{opacity:1}
+.room-entry,.small-button,.toolbar-icon,.dock-button,.voice-control,.group-chip{
+  transition:background-color .16s ease,border-color .16s ease,transform .16s ease,opacity .16s ease;
+}
+.small-button:hover:not(:disabled),.toolbar-icon:hover:not(:disabled),.dock-button:hover:not(:disabled){transform:translateY(-1px)}
+/* Cards de participantes: com muitos participantes vira grade; com transmissão, uma faixa horizontal. */
+.call-layout.no-sharing .call-participants{
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));
+  grid-auto-rows:minmax(0,1fr);
+}
+.call-person-card.demo-speaking{border:2px solid #8B5CF6;box-shadow:inset 0 0 0 1px #8B5CF633,0 0 17px #8B5CF626}
+.call-person-card.demo-person .call-person-avatar{background:linear-gradient(135deg,#365581,#7153AA)}
+.demo-label{font-size:9px;letter-spacing:.4px;color:#9EA7C7;margin-left:5px}
+.call-participants--compact .call-person-card{flex-basis:clamp(125px,23%,260px)}
+/* Os controles no rodapé permitem mutar ou interromper a transmissão mesmo no chat de texto. */
+.call-dock .dock-button[aria-pressed="true"]{background:#35275F;border-color:#8B5CF6;color:#fff}
+.call-dock .dock-button.sharing[aria-pressed="true"]{background:#203C68;border-color:#477BFF}
+/* Botão de demonstração não confunde com uma chamada real */
+.demo-toggle.active{border-color:#477BFF;background:#263454;color:#E7EFFF}
+/* Diálogos respeitam o tema, ficam dentro da área visível e usam rolagem quando necessário */
+.consivo-dialog{width:min(700px,calc(100vw - 44px));max-height:min(85vh,760px);overflow:auto;
+  padding:0;background:#181827;color:#F7F7FF;border:1px solid #464063;border-radius:19px;
+  box-shadow:0 26px 100px #000a;
+}
+.consivo-dialog::backdrop{background:#020309c9;backdrop-filter:blur(4px)}
+.consivo-dialog-header{display:flex;gap:15px;justify-content:space-between;align-items:flex-start;
+  padding:23px 24px;border-bottom:1px solid #33314A}
+.consivo-dialog-header h2{font-size:21px;margin:6px 0}
+.consivo-dialog-header p{font-size:12px;line-height:1.5;margin:4px 0 0;color:#A3A3BD}
+.consivo-dialog-close{background:#29263B;color:#F7F7FF;border:1px solid #514966;border-radius:9px;padding:7px 11px}
+.consivo-dialog-body{padding:20px 24px 26px;display:grid;gap:16px}
+.consivo-setting{display:grid;gap:7px;font-size:12px;color:#DDD6F9}
+.consivo-setting select{width:100%;background:#252337;color:#F7F7FF;border:1px solid #49415D;border-radius:10px;padding:11px}
+.consivo-setting input[type=range]{width:100%;accent-color:#8B5CF6}
+.consivo-setting-row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.consivo-help{font-size:11px;color:#A3A3BD;line-height:1.6;margin:0}
+.consivo-dialog-actions{display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.consivo-mini-button{border:1px solid #4E486B;border-radius:9px;background:#29243F;color:#EDE8FF;padding:10px 13px;font-size:12px}
+.consivo-mini-button:hover{background:#403459}
+.consivo-meter{height:9px;background:#302D43;overflow:hidden;border-radius:9px;border:1px solid #4B4567}
+.consivo-meter>div{width:0;height:100%;background:linear-gradient(90deg,#8B5CF6,#477BFF);transition:width .09s}
+.consivo-camera-preview{background:#080A14;border:1px solid #3A3554;border-radius:12px;
+  width:100%;height:168px;object-fit:contain}
+.consivo-camera-preview:not([data-playing="true"]){display:none}
+/* Grade do seletor de monitores/janelas, com prévias em miniatura. */
+.capture-tabs{display:flex;gap:10px}
+.capture-tab{padding:9px 12px;border:1px solid #4C455E;border-radius:9px;background:#28243A;color:#DCD5F3}
+.capture-tab.active{background:#362858;color:#fff;border-color:#8B5CF6}
+.capture-source-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:13px;max-height:360px;overflow:auto}
+.capture-source{display:flex;flex-direction:column;gap:9px;text-align:left;background:#211F33;color:#EFEAFF;border:1px solid #47415C;border-radius:12px;padding:9px;min-width:0}
+.capture-source:hover,.capture-source:focus-visible{border-color:#8B5CF6;background:#2F2949}
+.capture-source img{width:100%;aspect-ratio:16/9;object-fit:contain;background:#090A13;border-radius:7px}
+.capture-source span{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:1120px){
+  .top-actions{gap:6px}.status-pill{display:none}.topbar{padding:0 12px}
+  .call-layout.no-sharing .call-participants{grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}
+}
+@media(max-height:700px){
+ .consivo-dialog{max-height:90vh}
+ .call-layout .voice-controls{gap:9px}
+ .call-layout.no-sharing .call-person-avatar{width:72px;height:72px;font-size:32px}
+}
+@media(prefers-reduced-motion:reduce){
+ .app-shell,.channel-sidebar,.chat-panel,.room-entry,.small-button,.toolbar-icon,.dock-button,.voice-control,.group-chip{transition:none!important}
+}
+/* CONSIVO v0.6 — fim */
+
+
+/* CONSIVO v0.6.1 — preferências reais de captura, mantendo a paleta dark */
+.consivo-quality-section {
+  display:grid; gap:10px; padding:15px; border-radius:13px;
+  background:#211F33; border:1px solid #393654;
+}
+.consivo-quality-section h3 { margin:0; color:#F7F7FF; font-size:15px; }
+.consivo-quality-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.consivo-quality-status { margin:0; font-size:11px; color:#B2CBFF; white-space:pre-line; line-height:1.7; }
+.consivo-quality-section select:focus-visible { outline:2px solid #477BFF; outline-offset:2px; }
+@media(max-width:550px) { .consivo-quality-grid {grid-template-columns:1fr;} }
+/* CONSIVO v0.6.1 — fim */
+
+
+/* CONSIVO v0.6.2 — qualidade e apresentação da câmera */
+.consivo-camera-section { border-color:#494068; }
+.consivo-camera-options { align-items:end; gap:14px; }
+.consivo-camera-check { display:inline-flex; align-items:center; gap:9px; color:#E6DFFA; font-size:12px; padding-bottom:10px; cursor:pointer; }
+.consivo-camera-check input { width:16px; height:16px; accent-color:#8B5CF6; }
+.consivo-camera-fit { min-width:180px; flex:1; }
+#settingsCamera { transform:scaleX(-1); object-fit:cover; }
+#settingsCamera.consivo-unmirrored, .call-person-video.consivo-unmirrored { transform:none; }
+#settingsCamera.consivo-camera-contain, .call-person-video.consivo-camera-contain { object-fit:contain; }
+.consivo-camera-section select:focus-visible,.consivo-camera-check input:focus-visible { outline:2px solid #477BFF; outline-offset:2px; }
+@media(max-width:530px) { .consivo-camera-fit { min-width:100%; } }
+/* CONSIVO v0.6.2 — fim */
+
+
+/* Consivo v0.6.3 — opções restritas e fonte selecionada. */
+.consivo-setting select:disabled {opacity:.55;cursor:not-allowed;}
+.consivo-setting select option:disabled{color:#84849d;}
+.consivo-compat-status{font-size:.79rem;line-height:1.5;color:#b8b0d2;white-space:pre-line;margin:.55rem 0;}
+.capture-source.consivo-selected{outline:2px solid #8B5CF6;outline-offset:1px;background:#30284b;}
+#captureStartButton:disabled{opacity:.45;cursor:not-allowed;}
+
+/* Consivo v0.6.5 — foco compartilhado da transmissão. */
+.call-broadcast .broadcast-focus-toggle{
+  position:absolute;top:12px;right:12px;z-index:4;
+  display:grid;place-items:center;width:38px;height:38px;padding:0;
+  border:1px solid #9188bf;border-radius:11px;background:#101323e6;
+  color:#eff0ff;cursor:pointer;transition:background-color .15s ease,transform .15s ease;
+}
+.call-broadcast .broadcast-focus-toggle svg{width:21px;height:21px}
+.call-broadcast .broadcast-focus-toggle:hover{background:#423370;transform:translateY(-1px)}
+.call-broadcast .broadcast-focus-toggle:focus-visible{outline:2px solid #a78bfa;outline-offset:2px}
+.call-broadcast .broadcast-focus-toggle[aria-pressed="true"]{background:#3e2b71;border-color:#a78bfa}
+/* Quando focado, a transmissão ocupa toda a área da call.
+   A barra de controles sobrepõe o vídeo e aparece ao mover o mouse ou focá-la. */
+.call-layout.is-sharing.share-focused{
+  grid-template-rows:minmax(0,1fr);padding:8px;gap:0;
+}
+.call-layout.share-focused .call-participants{display:none}
+.call-layout.share-focused .call-broadcast{height:100%;width:100%;min-height:0}
+.call-layout.share-focused .voice-controls{
+  position:absolute;left:50%;bottom:17px;transform:translateX(-50%);
+  z-index:5;margin:0;padding:8px 12px;border-radius:16px;
+  background:#11101ddf;border:1px solid #494262;
+  opacity:0;pointer-events:none;transition:opacity .16s ease;
+}
+.call-layout.share-focused:hover .voice-controls,
+.call-layout.share-focused:focus-within .voice-controls{opacity:1;pointer-events:auto}
+.call-layout.share-focused .broadcast-label{bottom:12px;max-width:calc(100% - 24px)}
+@media(hover:none){.call-layout.share-focused .voice-controls{opacity:1;pointer-events:auto}}
+@media(prefers-reduced-motion:reduce){.call-broadcast .broadcast-focus-toggle,.call-layout.share-focused .voice-controls{transition:none}}

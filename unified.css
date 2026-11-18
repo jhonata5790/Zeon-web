@@ -1,0 +1,48 @@
+/* Consivo v0.7.3: interface oficial agora conectada ao Supabase e LiveKit. */
+#authGate[hidden],#setupScreen[hidden],#loginScreen[hidden],#loadingScreen[hidden]{display:none!important}
+#authGate{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;background:radial-gradient(ellipse at 45% 24%,#2b1d52 0%,#0b0b14 62%);padding:20px;overflow:auto}
+.auth-panel{width:min(100%,440px);background:#191927;border:1px solid #4b3d6b;border-radius:20px;padding:28px;box-shadow:0 28px 90px #0009;color:#f7f7ff}
+.auth-logo{width:64px;height:64px;object-fit:contain;border-radius:16px;display:block;margin:0 auto 15px}
+.auth-panel h2{font-size:24px;margin:0 0 8px;text-align:center}.auth-panel p{color:#aaa3c2;font-size:13px;line-height:1.55;text-align:center}
+.auth-panel label{display:block;font-size:12px;font-weight:700;margin:15px 0 6px}.auth-panel input{width:100%;background:#100f1e;border:1px solid #4a4265;border-radius:10px;color:#fff;padding:12px;font:inherit}
+.auth-panel form button,.auth-panel .auth-button{border:0;border-radius:10px;padding:12px;background:#8B5CF6;color:#fff;font-size:13px;font-weight:750;cursor:pointer}
+.auth-panel form button[type=submit]{width:100%;margin-top:16px}.auth-secondary-actions{display:flex;gap:10px;margin-top:12px}.auth-secondary-actions button{flex:1;background:#302844}
+.app-shell.auth-locked{filter:blur(3px);pointer-events:none}
+#netStatus.connected .pulse-dot{background:#3cce9d}
+#netStatus{white-space:nowrap}
+#accountButtons{display:flex;gap:8px}.group-join{background:#27213e;color:#e9e1ff;border:1px solid #5c477f;border-radius:50%;width:39px;height:39px;font-size:19px;margin:8px auto}
+#remoteAudio{position:absolute;width:0;height:0;overflow:hidden}
+.call-layout .call-participants .call-person-card{min-height:0}
+.call-layout .call-person-card.speaking{outline:2px solid #8B5CF6;outline-offset:-2px}
+.call-layout .call-person-video.self-mirror{transform:scaleX(-1)}
+.call-layout .call-person-video:not(.self-mirror){transform:none}
+#callDock[hidden]{display:none!important}
+#workspace.voice-workspace{overflow:hidden;min-height:0}
+#workspace.text-workspace{overflow:hidden;min-height:0}
+#workspace .text-channel-view{max-width:100%;height:100%}
+#workspace .text-channel-heading{flex-shrink:0}
+#workspace .text-messages{overflow-y:auto}
+.voice-controls [disabled]{opacity:.38;cursor:not-allowed}
+#callChatToggle[hidden],#inviteButton[hidden]{display:none!important}
+.chat-footnote{display:none}
+#settingsCamera{max-height:180px}
+@media(max-width:1060px){.app-shell.call-chat-open .chat-panel{display:block;position:absolute;z-index:20;right:0;top:0;bottom:0;width:min(320px,80vw);box-shadow:-16px 0 50px #0008}}
+@media(prefers-reduced-motion:reduce){.auth-panel,.call-person-card{animation:none;transition:none}}
+
+/* Consivo v0.7.9 — volume individual de voz, só na reprodução local */
+.call-person-info{min-width:0;display:flex;align-items:center;gap:6px}
+.person-volume-button{border:1px solid #716399;background:rgba(22,19,37,.87);color:#e7dafa;border-radius:9px;min-width:30px;height:28px;padding:4px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;margin-left:auto;flex-shrink:0}
+.person-volume-button:hover,.person-volume-button:focus-visible{background:#443569;border-color:#a78bfa;outline:2px solid #a78bfa;outline-offset:1px}
+.person-volume-button svg{width:17px;height:17px}
+#personVolumePanel[hidden]{display:none!important}
+#personVolumePanel{position:fixed;z-index:1500;width:min(290px,calc(100vw - 16px));padding:15px;background:#191927;border:1px solid #65508d;box-shadow:0 18px 55px #000c;border-radius:14px;color:#f7f7ff;font-family:inherit;font-size:13px}
+#personVolumePanel .person-volume-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}
+#personVolumeName{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px}
+#personVolumeClose{background:none;color:#ded5ed;font:inherit;border:0;font-size:22px;cursor:pointer;line-height:1}
+#personVolumePanel label{display:flex;justify-content:space-between;gap:8px;color:#c8beda;margin-bottom:6px}
+#personVolumePanel output{color:#fff;font-weight:700}
+#personVolumeSlider{width:100%;accent-color:#8b5cf6;cursor:pointer;margin:5px 0 12px}
+#personVolumePanel .person-volume-actions{display:flex;gap:6px}
+#personVolumePanel .person-volume-actions button{flex:1;background:#302744;border:1px solid #51406f;border-radius:8px;color:#f5efff;font:inherit;padding:9px 6px;cursor:pointer}
+#personVolumePanel .person-volume-actions button:hover{background:#49366e}
+#personVolumePanel small{display:block;margin-top:12px;color:#a89cb7;line-height:1.45}
