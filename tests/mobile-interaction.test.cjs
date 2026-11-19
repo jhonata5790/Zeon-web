@@ -9,7 +9,7 @@ const home=join(__dirname,'..');
 const html=readFileSync(join(home,'index.html'),'utf8');
 const mobile=readFileSync(join(home,'mobile.js'),'utf8');
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-async function harness({mobile=true}={}){
+async function harness({touchDevice=true}={}){
   const dom=new JSDOM(html,{url:'https://zeon.example/',runScripts:'outside-only',pretendToBeVisual:true});
   const {window:w}=dom,d=w.document;
   const state={
@@ -20,7 +20,7 @@ async function harness({mobile=true}={}){
               {id:'v1',name:'sala principal',type:'voice',adminOnly:false}]
   };
   const calls={selectedGroups:[],selectedChannels:[],newGroup:0,joinGroup:0,newChannel:[],invite:0,settings:0,signOut:0,openProfile:0};
-  w.matchMedia=query=>({matches:mobile,media:query,addEventListener(){},removeEventListener(){}});
+  w.matchMedia=query=>({matches:touchDevice,media:query,addEventListener(){},removeEventListener(){}});
   w.visualViewport={height:780,addEventListener(){}};
   w.requestAnimationFrame=callback=>w.setTimeout(()=>callback(Date.now()),0);
   w.cancelAnimationFrame=id=>w.clearTimeout(id);
@@ -173,7 +173,7 @@ test('teclado de chat fecha e a navegação reaparece ao voltar',async()=>{
 });
 
 test('janela estreita no computador mantém o Zeon Desktop',async()=>{
-  const x=await harness({mobile:false});
+  const x=await harness({touchDevice:false});
   try{
     assert.equal(x.d.getElementById('zeon-mobile-root').hidden,true);
     assert.equal(x.d.getElementById('authGate').hidden,true);
