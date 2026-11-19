@@ -149,3 +149,25 @@ test('ações de grupo e conta chamam o adaptador compartilhado',async()=>{
     assert.equal(x.d.getElementById('zeon-mobile-root').hidden,true);
   }finally{x.close();}
 });
+
+test('falha ao abrir canal retorna à lista e informa o problema',async()=>{
+  const x=await harness();
+  try{
+    x.w.ZeonMobileAdapter.selectChannel=async()=>{throw Error('Canal indisponível');};
+    click(x.d,'.zm-item');await wait(55);
+    assert.equal(x.d.getElementById('zeon-mobile-root').classList.contains('zm-show-home'),true);
+    assert.match(x.d.getElementById('zmError').textContent,/Canal indisponível/);
+  }finally{x.close();}
+});
+test('teclado de chat fecha e a navegação reaparece ao voltar',async()=>{
+  const x=await harness();
+  try{
+    click(x.d,'.zm-item');await wait(30);
+    const input=x.d.createElement('input');input.id='textInput';x.d.body.append(input);
+    input.focus();await wait(25);
+    assert.equal(x.d.documentElement.classList.contains('zm-chat-typing'),true);
+    click(x.d,'#sidebarToggle');await wait(35);
+    assert.equal(x.d.documentElement.classList.contains('zm-chat-typing'),false);
+    assert.equal(x.d.getElementById('zeon-mobile-root').classList.contains('zm-show-home'),true);
+  }finally{x.close();}
+});
