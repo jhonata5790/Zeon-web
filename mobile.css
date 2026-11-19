@@ -1,5 +1,5 @@
 /* Zeon Mobile beta: navegação independente sem alterar o backend compartilhado. */
-#zeon-mobile-root[hidden]{display:none!important}
+#zeon-mobile-root[hidden],#zeon-mobile-root [hidden]{display:none!important}
 @media(min-width:741px){#zeon-mobile-root{display:none!important}}
 @media(max-width:740px){
   :root{--zeon-mobile-nav-h:68px}
@@ -79,4 +79,43 @@
 }
 @media(prefers-reduced-motion:reduce){
   .zeon-mobile-home,.zeon-mobile-nav *{scroll-behavior:auto!important;animation:none!important}
+}
+
+/* Zeon Web Mobile beta 0.2 — conversa em tela cheia e interações por toque. */
+@media(max-width:740px){
+  .app-shell #workspace.text-workspace{padding:0!important}
+  .app-shell #workspace .text-channel-heading{display:none}
+  .app-shell #workspace .text-channel-view{min-height:0}
+  .app-shell #workspace .text-messages{
+    min-height:0;padding:16px 14px 20px;gap:16px;
+    overscroll-behavior:contain
+  }
+  .app-shell #workspace .text-composer{
+    margin:0 10px 9px;padding:5px 6px;border-radius:16px;
+    min-height:49px;flex-shrink:0
+  }
+  .app-shell #workspace .text-composer input{
+    font-size:16px!important;padding:10px 11px
+  }
+  .app-shell #workspace .text-composer button{
+    min-width:41px;min-height:39px;border-radius:11px
+  }
+  .app-shell .topbar #sidebarToggle{
+    flex-shrink:0;min-width:39px;width:39px;height:39px;
+    font-size:25px;border-radius:12px
+  }
+  .app-shell .topbar .breadcrumb #channelName{
+    max-width:calc(100vw - 216px);
+    font-size:14px
+  }
+  .zeon-mobile-home{padding-bottom:36px}
+  .zeon-mobile-call-return{font-weight:700;line-height:1.5}
+  .zeon-mobile-icon-button{min-width:44px;min-height:44px}
+  .zeon-mobile-item{min-height:72px}
+  .zeon-mobile-nav{padding-left:max(7px,env(safe-area-inset-left));padding-right:max(7px,env(safe-area-inset-right))}
+}
+@media(max-width:360px){
+  .app-shell .topbar .breadcrumb #channelName{max-width:calc(100vw - 194px)}
+  .zeon-mobile-brand strong{font-size:21px}
+  .zeon-mobile-home{padding-left:13px;padding-right:13px}
 }
