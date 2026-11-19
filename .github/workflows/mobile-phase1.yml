@@ -16,5 +16,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verificar arquivos e integrações Web Mobile
-        run: node --test tests/mobile-phase1.test.cjs
+      - name: Instalar ambiente de testes DOM
+        run: npm install --no-save --package-lock=false --ignore-scripts jsdom@26.1.0
+      - name: Verificar arquivos e interações Web Mobile
+        run: node --test tests/mobile-phase1.test.cjs tests/mobile-interaction.test.cjs
