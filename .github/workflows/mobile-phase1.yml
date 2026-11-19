@@ -22,7 +22,7 @@ jobs:
         run: node --test tests/mobile-phase1.test.cjs tests/mobile-interaction.test.cjs
 
   mobile-browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
