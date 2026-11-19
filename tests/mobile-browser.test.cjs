@@ -39,7 +39,7 @@ async function verify(engine,label,width,height){
   assert.deepEqual(await page.locator('.zm-item-name').allTextContents(),['geral','criação']);
   await page.screenshot({path:path.join(out,label+'-conversas.png'),fullPage:true});
   await page.locator('[data-mobile-tab="groups"]').click();
-  assert.equal(await page.locator('#zmTitle').innerText(),'Grupos');
+  await page.locator('#zmTitle').getByText('Grupos').waitFor();
   assert.deepEqual(await page.locator('.zm-item-name').allTextContents(),['Ressonância','Mesa de RPG']);
   await page.screenshot({path:path.join(out,label+'-grupos.png'),fullPage:true});
   await page.locator('.zm-item',{hasText:'Mesa de RPG'}).click();
@@ -60,7 +60,7 @@ async function verify(engine,label,width,height){
   await page.locator('.zm-active-call').waitFor({state:'visible'});
   assert.match(await page.locator('.zm-active-call').innerText(),/Sala de voz/);
   await page.locator('[data-mobile-tab="profile"]').click();
-  assert.equal(await page.locator('#zmTitle').innerText(),'Meu perfil');
+  await page.locator('#zmTitle').getByText('Meu perfil').waitFor();
   await page.screenshot({path:path.join(out,label+'-perfil.png'),fullPage:true});
   await page.locator('.zm-item').first().click();
   await page.locator('#cv-page').waitFor({state:'visible'});
