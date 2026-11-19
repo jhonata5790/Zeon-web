@@ -64,13 +64,13 @@
     const target=document.querySelector('[data-action="'+type+'"]');if(target)target.click();
   }
   function show(next){
-    if(tab==='profile'&&next!=='profile')window.ConsivoProfile?.close?.();
-    tab=next;home=next!=='profile';
-    if(next==='profile'){
-      if(window.ConsivoProfile?.openOwn)void window.ConsivoProfile.openOwn();
-      else $('#footerAvatar')?.click();
+    if(!['chats','groups','calls','profile'].includes(next))return;
+    const openProfile=$('#cv-page');
+    if(openProfile&&!openProfile.hidden){
+      const closed=window.ConsivoProfile?.close?.();
+      if(closed===false)return; // Não descartar alterações do perfil sem confirmação.
     }
-    search.value='';sync();
+    tab=next;home=true;search.value='';sync();
   }
   function showChannel(native,type){
     home=false;tab=type==='voice'?'calls':'chats';
@@ -83,14 +83,37 @@
   function $$(selector){return [...document.querySelectorAll(selector)];}
   function selectedGroup(){return $('#groupTitle')?.textContent?.trim()||'Seu grupo';}
   function draw(){
-    title.textContent={chats:'Conversas',groups:'Grupos',calls:'Chamadas'}[tab]||'Conversas';
+    title.textContent={chats:'Conversas',groups:'Grupos',calls:'Chamadas',profile:'Meu perfil'}[tab]||'Conversas';
     subtitle.textContent={
-      chats:'Canais de texto de '+selectedGroup()+'. Conversas privadas virão em uma próxima etapa.',
+      chats:'Canais de texto de '+selectedGroup()+'. Conversas privadas serão adicionadas depois.',
       groups:'Seus espaços e comunidades.',
-      calls:'Entre nas salas de voz do grupo '+selectedGroup()+'.'
+      calls:'Entre nas salas de voz de '+selectedGroup()+'.',
+      profile:'Sua identidade e suas preferências no Zeon.'
     }[tab]||'';
+    const isProfile=tab==='profile';
+    search.parentElement.hidden=isProfile;
+    $('#zeon-mobile-root [data-mobile-action="create"]').hidden=isProfile||tab==='calls';
     search.placeholder=tab==='groups'?'Pesquisar grupos':tab==='calls'?'Pesquisar chamadas':'Pesquisar conversas';
     list.replaceChildren();actions.replaceChildren();
+    if(isProfile){
+      const name=$('#footerName')?.textContent?.trim()||'Você';
+      item(name,'Abrir perfil e personalizar',name.slice(0,1).toUpperCase(),'›',()=>{
+        if(window.ConsivoProfile?.openOwn)void window.ConsivoProfile.openOwn();
+      });
+      action('Configurações',()=>nativeAction('settings'));
+      action('Sair da conta',()=>$('#signOutBtn')?.click());
+      return;
+    }
+    const joined=$('#callDock .call-state small')?.textContent?.trim();
+    if(joined){
+      const call=button('◖))  Em chamada: '+joined+' · Voltar',()=>{
+        const selected=$('#channelList .room-entry-wrap .room-count')?.closest('.room-entry-wrap')?.querySelector('.room-entry');
+        if(selected)showChannel(selected,'voice');
+        else{home=false;tab='calls';sync();}
+      });
+      call.className='zeon-mobile-call-return';
+      actions.append(call);
+    }
     const q=search.value.trim().toLocaleLowerCase('pt-BR');
     if(tab==='groups'){
       action('Criar grupo',()=>nativeAction('new-group'));
@@ -107,17 +130,6 @@
       }
       if(!count)empty(q?'Nenhum grupo encontrado.':'Você ainda não tem grupos. Crie um ou entre usando convite.');
       return;
-    }
-    if(tab==='calls'){
-      const joined=$('#callDock .call-state strong')?.textContent?.trim();
-      if(joined){
-        const call=button('◖))  '+joined+' — Voltar à chamada',()=>{
-          const active=$('#channelList .room-entry-wrap:has(.room-count) .room-entry');
-          if(active)showChannel(active,'voice');
-          else{home=false;sync();}
-        });
-        call.className='zeon-mobile-call-return';actions.append(call);
-      }
     }
     const type=tab==='calls'?'voice':'text';
     const rows=[...channelButtons(type)];
@@ -136,11 +148,19 @@
       empty(q?'Nenhum canal encontrado.':type==='voice'
         ?'Não há canais de voz neste grupo.': 'Ainda não há canais de texto neste grupo.');
       if(!q)action('Ver grupos',()=>show('groups'));
+    }else if(tab==='chats'&&!q){
+      action('Trocar de grupo',()=>show('groups'));
     }
   }
   function sync(){
     const visible=mq.matches&&isReady();
     root.hidden=!visible;
+    const back=$('#sidebarToggle');
+    if(back){
+      back.textContent=mq.matches?'←':'☰';
+      back.setAttribute('aria-label',mq.matches?'Voltar à lista':'Abrir ou fechar canais');
+      back.title=mq.matches?'Voltar à lista':'Mostrar ou ocultar canais';
+    }
     if(!visible)return;
     root.classList.toggle('home-visible',home);
     tabs();if(home)draw();
@@ -154,7 +174,7 @@
   document.addEventListener('click',e=>{
     if(!mq.matches)return;
     if(e.target.closest('#sidebarToggle')){
-      e.preventDefault();e.stopImmediatePropagation();show('groups');return;
+      e.preventDefault();e.stopImmediatePropagation();show(tab);return;
     }
   },true);
   const watch=new MutationObserver(sync);
