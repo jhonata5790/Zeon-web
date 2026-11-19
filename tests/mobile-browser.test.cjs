@@ -85,7 +85,8 @@ async function verify(engine,label,width,height){
  try{
   await verify(chromium,'android-390',390,844);
   await verify(chromium,'android-320',320,700);
+  await verify(chromium,'android-paisagem',844,390);
   await verify(webkit,'iphone-390',390,844);
-  console.log('3 browser viewport scenarios passed');
+  console.log('4 browser viewport scenarios passed');
  }finally{server.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;server.close();});
