@@ -37,6 +37,11 @@ async function verify(engine,label,width,height){
   await page.locator('.zm-item').first().waitFor({state:'visible'});
   assert.equal(await page.locator('#zeon-mobile-root').evaluate(n=>n.hidden),false);
   assert.deepEqual(await page.locator('.zm-item-name').allTextContents(),['geral','criação']);
+  await page.locator('#authGate').evaluate(node=>{node.hidden=false;});
+  const mobileLogin=await page.locator('#authGate .auth-panel').evaluate(node=>getComputedStyle(node,'::before').content);
+  assert.match(mobileLogin,/BETA MOBILE/,label+': missing mobile login badge');
+  await page.screenshot({path:path.join(out,label+'-login-mobile.png'),fullPage:true});
+  await page.locator('#authGate').evaluate(node=>{node.hidden=true;});
   await page.screenshot({path:path.join(out,label+'-conversas.png'),fullPage:true});
   await page.locator('[data-mobile-tab="groups"]').click();
   await page.locator('#zmTitle').getByText('Grupos').waitFor();
@@ -87,6 +92,6 @@ async function verify(engine,label,width,height){
   await verify(chromium,'android-320',320,700);
   await verify(chromium,'android-paisagem',844,390);
   await verify(webkit,'iphone-390',390,844);
-  console.log('4 browser viewport scenarios passed');
+  console.log('5 browser viewport scenarios passed');
  }finally{server.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;server.close();});
