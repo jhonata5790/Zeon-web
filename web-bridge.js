@@ -132,6 +132,7 @@
     return {path};
   }
   async function invoke(command,arg={}) {
+    if(window.ZeonDMApi?.supports(command))return window.ZeonDMApi.run(command,arg,{request,session:{ensure:ensureSession,userId:()=>session?.user?.id}});
     await ready;
     if(command==='status'){
       if(session?.refresh_token){try{await ensureSession();}catch{}}

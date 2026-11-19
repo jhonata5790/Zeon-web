@@ -9,11 +9,14 @@
   <link rel="stylesheet" href="unified.css" />
   <link rel="stylesheet" href="profile-v080.css" />
   <link rel="stylesheet" href="web-responsive.css" />
+  <link rel="stylesheet" href="zeon-dm.css" />
   <script src="share-quality.js" defer></script>
   <script src="camera-quality.js" defer></script>
   <script src="media-compat.js" defer></script>
   <script src="livekit.bundle.js" defer></script>
+  <script src="zeon-dm-api.js" defer></script>
   <script src="web-bridge.js" defer></script>
+  <script src="zeon-dm.js" defer></script>
   <script src="unified.js" defer></script>
   <script src="profile-v080.js" defer></script>
 </head>
@@ -21,6 +24,8 @@
   <div class="app-shell">
     <aside class="guild-rail" aria-label="Grupos">
       <div class="logo" title="Zeon" aria-label="Zeon"><span class="zeon-brand-mark" aria-hidden="true">Z</span></div>
+      <div class="rail-divider"></div>
+      <button id="dmHomeButton" class="dm-rail-button" data-dm-action="home" type="button" aria-label="Mensagens privadas" title="Mensagens privadas">✉</button>
       <div class="rail-divider"></div>
       <nav id="groupRail" class="group-rail"></nav>
       <button class="rail-add" data-action="new-group" title="Criar grupo" aria-label="Criar grupo">+</button>

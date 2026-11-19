@@ -263,7 +263,7 @@
     h.innerHTML=`<div class="cv-full-shell ${editing?'cv-editing':''}">
       <header class="cv-page-top"><button class="cv-icon" data-cv-action="back" title="Voltar">←</button><strong>${own?'Meu perfil':'Perfil'}</strong>
         <div class="cv-top-actions">${own?editing?`<button class="cv-save" data-cv-action="save" disabled>✓ Salvar</button><button class="cv-cancel" data-cv-action="cancel">Cancelar</button>`:
-        `<button class="cv-edit-main" data-cv-action="edit" title="Editar perfil" aria-label="Editar perfil">✎</button>`:''}</div>
+        `<button class="cv-edit-main" data-cv-action="edit" title="Editar perfil" aria-label="Editar perfil">✎</button>`:`<button class="cv-save" data-cv-action="message" data-id="${esc(pageId)}">✉ Mensagem</button>`}</div>
       </header>
       ${effectLayer(p.effect,'cv-page-effect')}
       <div class="cv-profile-scroll"><div class="cv-profile-stage">
@@ -309,7 +309,7 @@
   async function showQuick(id,anchor){if(!isUuid(id))return;closeQuick();quickId=id;
     try{const r=id===myId?{profile:me,mediaBase}:await api('profileRead',{userId:id});if(quickId!==id)return;
       mediaBase=r.mediaBase||mediaBase;const p=norm(r.profile||{...defaults,id,display_name:'Perfil não configurado'});
-      const n=document.createElement('div');n.className='cv-quick';n.id='cv-quick';n.innerHTML=`<div class="cv-quick-banner"></div><div class="cv-quick-info">${avatar({...p,avatar_path:/\.gif$/i.test(p.avatar_path||'')?null:p.avatar_path,avatar_frame:'none',avatar_decoration:'none'},true)}<div><strong>${esc(p.display_name)}</strong><small>@${esc(p.handle)}</small></div></div><p>${esc(p.bio)}</p><button data-cv-action="full" data-id="${esc(id)}">Ver perfil</button>`;
+      const n=document.createElement('div');n.className='cv-quick';n.id='cv-quick';n.innerHTML=`<div class="cv-quick-banner"></div><div class="cv-quick-info">${avatar({...p,avatar_path:/\.gif$/i.test(p.avatar_path||'')?null:p.avatar_path,avatar_frame:'none',avatar_decoration:'none'},true)}<div><strong>${esc(p.display_name)}</strong><small>@${esc(p.handle)}</small></div></div><p>${esc(p.bio)}</p><button data-cv-action="full" data-id="${esc(id)}">Ver perfil</button>${id===myId?'':`<button data-cv-action="message" data-id="${esc(id)}">✉ Mensagem</button>`}`;
       root().append(n);const quickBanner=$('.cv-quick-banner',n);if(quickBanner){quickBanner.style.setProperty('--cv-a',p.accent_color);quickBanner.style.setProperty('--cv-b',p.secondary_color);}
       const rect=anchor.getBoundingClientRect();n.style.left=Math.max(8,Math.min(innerWidth-330,rect.left))+'px';n.style.top=Math.max(8,Math.min(innerHeight-310,rect.bottom+8))+'px';}
     catch(err){console.warn('[Consivo quick]',err);}}
@@ -431,7 +431,7 @@
       $$('.cv-color-dots button',current).forEach(n=>n.classList.toggle('selected',n===colorButton));saveButton();return;}
     const action=e.target.closest('[data-cv-action]');if(action){const type=action.dataset.cvAction;
       if(type==='back'){closePage();return;}if(type==='edit'){edit();return;}if(type==='cancel'){cancel();return;}if(type==='save'){void save();return;}
-      if(type==='full'){void showPage(action.dataset.id);return;}if(type==='retry'){$('#cv-setup-error')?.remove();sessionFor=null;void inspect();return;}
+      if(type==='full'){void showPage(action.dataset.id);return;}if(type==='message'){const id=action.dataset.id||pageId;closeQuick();closePage(true);void window.ZeonDM?.openByUserId(id);return;}if(type==='retry'){$('#cv-setup-error')?.remove();sessionFor=null;void inspect();return;}
       if(type==='signout'){void api('signOut').finally(()=>location.reload());return;}
       if(type==='edit-card'){closeFocus();openCard(action.dataset.card);return;}
       if(type==='add-at'){catalogAt=Number(action.dataset.index);activeCard=null;renderPage();return;}
@@ -453,7 +453,7 @@
       if(type==='remove-banner'&&draft){draft.banner_path=null;draft.bannerFile=null;draft.bannerPreview=null;renderPage();return;}
     }
     if(e.target.closest('#cv-quick'))return;if($('#cv-quick'))closeQuick();if(onboarding)return;
-    if(e.target.closest('[data-action="channel"],[data-action="group"]')){closePage();return;}
+    if(e.target.closest('[data-action="channel"],[data-action="group"],[data-dm-action="home"]')){closePage();return;}
     if(e.target.closest('[data-action],button,input,textarea,select'))return;
     const own=e.target.closest('#footerAvatar,#footerName');if(own){void showPage(myId);return;}
     const participant=e.target.closest('.call-person-card[data-person]');if(participant&&e.target.closest('.call-person-avatar,.call-person-video')){void showQuick(participant.dataset.person,participant);return;}

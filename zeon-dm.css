@@ -1,0 +1,57 @@
+/* Zeon · Mensagens diretas v0.8.2 */
+.guild-rail .dm-rail-button{appearance:none;display:grid;place-items:center;width:45px;height:45px;border-radius:15px;border:1px solid #7b5bbb;background:#2a2140;color:#e8d9ff;font-size:23px;cursor:pointer;position:relative;flex:0 0 auto}
+.guild-rail .dm-rail-button:hover,.guild-rail .dm-rail-button.selected{background:#7553b9;color:white;border-color:#ad90ed}
+.dm-rail-button.has-unread::after{content:'';position:absolute;right:-2px;top:-2px;width:10px;height:10px;background:#b78aff;border:2px solid #13101b;border-radius:50%}
+.dm-list-header{padding:17px 13px 10px;display:flex;justify-content:space-between;align-items:center;font-size:10px;letter-spacing:1.4px;color:#a9a0c0;font-weight:850}
+.dm-list-header button{border:0;color:#d8c4ff;background:#47345f;border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:23px}
+.dm-sidebar-list{display:grid;gap:5px;padding:0 8px 10px}
+.dm-sidebar-item{width:100%;border:1px solid transparent;display:flex;align-items:center;min-width:0;gap:11px;padding:11px 9px;text-align:left;background:transparent;color:#dcd3ed;border-radius:11px;cursor:pointer;font:inherit}
+.dm-sidebar-item.active,.dm-sidebar-item:hover{background:#372b4e;border-color:#54426e}
+.dm-avatar{width:38px;height:38px;flex:0 0 38px;display:grid;place-items:center;border-radius:13px;background:#65438d;color:#f5eaff;font-weight:800;font-size:17px}
+.dm-avatar-large{width:48px;height:48px;flex-basis:48px;border-radius:16px;font-size:22px}
+.dm-sidebar-copy{display:flex;min-width:0;flex:1;flex-direction:column;gap:5px}
+.dm-sidebar-copy strong,.dm-sidebar-copy small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dm-sidebar-copy strong{font-size:13px;color:#fff}
+.dm-sidebar-copy small{font-size:11px;color:#ada3c0}
+.dm-unread{width:9px;height:9px;flex:0 0 9px;border-radius:50%;background:#c8a3ff;box-shadow:0 0 8px #9c6bff55}
+.dm-sidebar-empty{padding:15px 12px;color:#ac9fbf;font-size:12px;line-height:1.7}
+.dm-new-inline{margin:8px 13px;border:1px dashed #67528d;background:#2c203d;color:#decafa;border-radius:10px;padding:12px;cursor:pointer;font-size:12px}
+.dm-workspace{display:flex;min-width:0;align-items:stretch}
+.dm-workspace .dm-channel{width:100%;display:flex;min-width:0;flex:1;flex-direction:column}
+.dm-chat-title{display:flex;gap:12px;align-items:center;border-bottom:1px solid #3c324f;padding:14px 22px;min-width:0}
+.dm-chat-title>div:nth-child(2){min-width:0;flex:1}
+.dm-chat-title h2{font-size:18px;color:#fff;margin:0 0 4px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.dm-chat-title p{font-size:12px;color:#bdb1cd;margin:0}
+.dm-profile-link{border:1px solid #57446d;background:#32253f;color:#ead7fc;border-radius:8px;padding:8px 12px;cursor:pointer;white-space:nowrap}
+.dm-messages{display:flex;flex:1;flex-direction:column;gap:9px;overflow-y:auto;min-height:0;padding:22px;overscroll-behavior:contain}
+.dm-bubble-row{display:flex;width:100%}
+.dm-bubble-row.mine{justify-content:flex-end}
+.dm-bubble-row.theirs{justify-content:flex-start}
+.dm-bubble{max-width:min(77%,570px);padding:11px 14px 7px;border:1px solid #4d3c61;border-radius:15px 15px 15px 4px;background:#30263d;color:#f7f3ff;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.55}
+.dm-bubble-row.mine .dm-bubble{border-color:#8254b8;background:#634095;border-radius:15px 15px 4px 15px}
+.dm-bubble time{display:block;margin-top:5px;text-align:right;font-size:10px;color:#d5c7e3}
+.dm-composer{margin:0 18px 16px!important;flex:0 0 auto}
+.dm-welcome{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;flex:1;padding:25px;color:#eee4ff}
+.dm-welcome-mark{width:78px;height:78px;border-radius:24px;background:#332448;border:1px solid #70508d;display:grid;place-items:center;color:#d8b8fc;font-size:43px;margin-bottom:22px}
+.dm-welcome h2{font-size:25px;margin:0 0 9px}
+.dm-welcome p{font-size:13px;color:#bcb0c9;margin:0 0 19px}
+.dm-welcome button,.dm-search-row button{background:#8656c5;border:0;border-radius:9px;padding:11px 16px;color:#fff;font-weight:700;cursor:pointer}
+.dm-search-dialog{border:1px solid #65517a;background:#1b1626;color:#f5ebff;border-radius:19px;padding:0;max-width:min(460px,calc(100% - 28px));width:100%;box-shadow:0 28px 75px #0009}
+.dm-search-dialog::backdrop{background:#080612ba}
+.dm-search-inner{padding:23px}
+.dm-search-head{display:flex;gap:9px;justify-content:space-between}
+.dm-search-head h2{margin:6px 0;font-size:23px}
+.dm-search-head p{margin:0 0 20px;font-size:12px;color:#bbafd0}
+.dm-search-close{align-self:flex-start;width:32px;height:32px;background:#382b47;color:#fff;border:0;border-radius:8px;cursor:pointer}
+.dm-search-form label{display:block;font-size:12px;margin-bottom:7px;color:#d5c6e7}
+.dm-search-row{display:flex;gap:9px}
+.dm-search-row input{min-width:0;flex:1;background:#292137;border:1px solid #655177;border-radius:9px;color:white;font:inherit;padding:11px}
+.dm-search-results{display:grid;gap:7px;max-height:320px;overflow-y:auto;padding-top:16px}
+.dm-search-hint{font-size:12px;color:#bcafca}
+.dm-result{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#2b223a;border:1px solid #483655;color:#fff;border-radius:11px;padding:10px;cursor:pointer}
+.dm-result:hover{background:#3d2c55}
+.dm-result>span:nth-child(2){display:grid;gap:4px;flex:1;min-width:0}
+.dm-result strong{font-size:13px;overflow:hidden;text-overflow:ellipsis}
+.dm-result small{font-size:11px;color:#bda8db}
+.dm-result-arrow{color:#caaaff}
+@media(max-width:740px){.guild-rail .dm-rail-button{width:39px;height:39px;border-radius:12px;font-size:21px}.dm-chat-title{padding:11px 13px}.dm-chat-title h2{font-size:15px}.dm-profile-link{padding:7px;font-size:11px}.dm-messages{padding:13px 10px}.dm-bubble{max-width:87%}.dm-composer{margin:0 6px 10px!important}.dm-welcome h2{font-size:19px}}

@@ -24,6 +24,7 @@ Object.assign(prefs,qual?.normalize(prefs)||{},shareQual?.normalizeShareSettings
 const savePrefs=()=>localStorage.setItem(PREFKEY,JSON.stringify(prefs));
 const S={status:null,groups:[],group:null,channels:[],channel:null,role:null,room:null,joinedVoice:null,connecting:false,busy:false,sidebarOpen:prefs.sidebarOpen!==false && (!window.desktop?.isWeb || window.innerWidth>740),chatOpen:false,focus:false,poll:null,refreshing:false,modalAction:null,source:null,sources:[],sourceKind:'screen',cameraModes:null};
 const LK=()=>window.ConsivoLiveKit;
+const DM=window.ZeonDM;
 const api=(command,args={})=>window.desktop.onlineInvoke(command,args);
 const group=()=>S.groups.find(g=>g.id===S.group);
 const channel=()=>S.channels.find(c=>c.id===S.channel);
@@ -39,10 +40,10 @@ function authGate(stage){
  $('#setupScreen').hidden=stage!=='setup';$('#loginScreen').hidden=stage!=='login';$('#loadingScreen').hidden=stage!=='loading';
  $('.app-shell').classList.toggle('auth-locked',stage!=='ready');
 }
-async function showAuth(){authGate('loading');S.status=await api('status');
+async function showAuth(){clearInterval(S.poll);DM?.reset();authGate('loading');S.status=await api('status');
  if(!S.status.configured){authGate('setup');setConnection('CONFIGURAR ONLINE');return;}
  if(!S.status.loggedIn){authGate('login');setConnection('DESCONECTADO');return;}
- authGate('ready');setConnection('ONLINE',true);await loadGroups();}
+ authGate('ready');setConnection('ONLINE',true);await loadGroups();void task(()=>DM.tick());}
 $('#setupForm').addEventListener('submit',e=>{e.preventDefault();void task(async()=>{await api('configure',{url:$('#projectUrl').value,key:$('#projectKey').value});await showAuth();});});
 async function auth(method){const email=$('#accountEmail').value,password=$('#accountPassword').value;
   const response=await api(method,{email,password});$('#accountPassword').value='';
@@ -55,24 +56,25 @@ async function loadGroups(){const before=S.group;S.groups=await api('groups');
  S.group=S.groups.some(g=>g.id===before)?before:S.groups[0]?.id||null;
  await selectGroup(S.group,false);renderGroups();}
 function renderGroups(){
+ const dmButton=$('#dmHomeButton');if(dmButton){dmButton.classList.toggle('selected',!!DM?.active());dmButton.setAttribute('aria-pressed',String(!!DM?.active()));}
  $('#groupRail').innerHTML=S.groups.map(g=>`<button class="group-chip ${S.group===g.id?'selected':''}" data-action="group" data-id="${escape(g.id)}" title="${escape(g.name)}" aria-label="Grupo ${escape(g.name)}">${escape(initials(g.name))}</button>`).join('');
 }
 async function selectGroup(id,reset=true){
- if(S.group!==id&&S.room)await leaveVoice();S.group=id;
+ DM?.leave();if(S.group!==id&&S.room)await leaveVoice();S.group=id;
  const g=group();S.channels=g?await api('channels',{groupId:g.id}):[];
  S.role=g?await api('memberRole',{groupId:g.id}):null;
  if(reset||!S.channels.some(c=>c.id===S.channel))S.channel=S.channels.find(c=>c.type==='text')?.id||S.channels[0]?.id||null;
  S.chatOpen=false;render();await refreshMessages();startPolling();}
-function renderChannels(){const g=group();$('#groupTitle').textContent=g?.name||'Seus grupos';
+function renderChannels(){if(DM?.active()){DM.renderSidebar();return;}const g=group();$('#groupTitle').textContent=g?.name||'Seus grupos';
  $('#groupSubtitle').textContent=g?`${S.channels.length} canais · Grupo privado`:'Crie um grupo ou entre por convite';
  $('#footerAvatar').textContent=initials(displayName());$('#footerName').textContent=displayName();
  const canCreate=['owner','admin'].includes(S.role);
  $('#channelList').innerHTML=['text','voice'].map(type=>`<div class="section-label">CANAIS DE ${type==='text'?'TEXTO':'VOZ'} ${canCreate?`<button class="text-plus" data-action="new-channel" data-type="${type}" title="Novo canal" aria-label="Novo canal">+</button>`:''}</div><div class="channel-list">${S.channels.filter(c=>c.type===type).map(c=>`<div class="room-entry-wrap"><button class="room-entry ${S.channel===c.id?'active':''}" data-action="channel" data-id="${escape(c.id)}"><span class="room-symbol">${type==='text'?'#':'◖))'}</span><span class="room-name">${escape(c.name)}</span>${c.admin_only?'<span class="channel-lock" title="Somente administradores">◆</span>':''}${S.joinedVoice===c.id?'<span class="room-count">●</span>':''}</button></div>`).join('')}</div>`).join('');}
-async function selectChannel(id){const next=S.channels.find(x=>x.id===id);if(!next)return;
+async function selectChannel(id){DM?.leave();const next=S.channels.find(x=>x.id===id);if(!next)return;
  S.channel=id;S.chatOpen=false;render();
  if(next.type==='voice'&&S.joinedVoice!==id)await joinVoice(next);
  await refreshMessages();}
-function renderHeader(){const c=channel();$('#channelName').textContent=c?.name||'Início';$('#channelKind').textContent=c?.type==='voice'?'Voz':'Texto';
+function renderHeader(){if(DM?.active()){DM.renderHeader();return;}const c=channel();$('#channelName').textContent=c?.name||'Início';$('#channelKind').textContent=c?.type==='voice'?'Voz':'Texto';
  $('#channelGlyph').textContent=c?.type==='voice'?'◖))':'#';$('#sidebarToggle').setAttribute('aria-pressed',String(S.sidebarOpen));
  $('.app-shell').classList.toggle('sidebar-hidden',!S.sidebarOpen);
  const canChat=c?.type==='voice'&&S.joinedVoice===c.id;
@@ -81,7 +83,7 @@ function renderHeader(){const c=channel();$('#channelName').textContent=c?.name|
  $('#inviteButton').hidden=!S.group;$('#inviteButton').textContent='✉ Convidar';
 }
 function render(){renderGroups();renderChannels();renderHeader();renderWorkspace();renderDock();renderCallChat();syncFloat();}
-function renderWorkspace(){const c=channel(),root=$('#workspace');
+function renderWorkspace(){if(DM?.active()){detach();DM.renderWorkspace();return;}const c=channel(),root=$('#workspace');
  // Não destrua vídeos enquanto a mesma chamada estiver visível. Recriar o <video>
  // por causa de um evento de voz causava tela preta/piscadas durante a transmissão.
  if(!c||c.type==='text'){
@@ -171,13 +173,13 @@ function drawMessages(root,records=[]){if(!root)return;const wasBottom=root.scro
  root.innerHTML=records.length?records.map(m=>`<div class="message" data-author-id="${escape(m.author_id)}"><span class="avatar">${escape(initials(m.author_name))}</span><div><div class="message-meta">${escape(m.author_name||'Participante')} <time>${new Date(m.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</time></div><div class="message-text">${escape(m.body)}</div></div></div>`).join(''):'<div class="chat-empty"><strong>Sem mensagens ainda</strong><p>Comece uma conversa neste canal.</p></div>';
  if(wasBottom)root.scrollTop=root.scrollHeight;
 }
-function renderCallChat(){const enabled=!!(S.chatOpen&&channel()?.type==='voice'&&S.joinedVoice===S.channel);
+function renderCallChat(){const enabled=!!(!DM?.active()&&S.chatOpen&&channel()?.type==='voice'&&S.joinedVoice===S.channel);
  $('.app-shell').classList.toggle('call-chat-open',enabled);if(!enabled)return;
  $('#callChatRoomName').textContent=joinedChannel()?.name||'';
  drawMessages($('#callMessages'),S.messageCache?.[S.joinedVoice]||[]);
 }
-function startPolling(){clearInterval(S.poll);if(S.status?.loggedIn)S.poll=setInterval(()=>void task(refreshMessages),4000);}
-async function refreshMessages(){if(S.refreshing||!S.status?.loggedIn)return;S.refreshing=true;
+function startPolling(){clearInterval(S.poll);if(S.status?.loggedIn)S.poll=setInterval(()=>void task(async()=>{await refreshMessages();await DM.tick();}),4000);}
+async function refreshMessages(){if(DM?.active()||S.refreshing||!S.status?.loggedIn)return;S.refreshing=true;
  const active=channel()?.type==='text'?S.channel:null,chat=S.chatOpen?S.joinedVoice:null;
  try{S.messageCache ||= {};for(const id of new Set([active,chat].filter(Boolean))){const data=await api('messages',{channelId:id});S.messageCache[id]=data.reverse();}
  if(active===S.channel&&$('#textMessages'))drawMessages($('#textMessages'),S.messageCache[active]);if(chat===S.joinedVoice)renderCallChat();}
@@ -500,5 +502,6 @@ async function initConsivoDebug(){
 void initConsivoDebug();
 
 window.addEventListener('beforeunload',()=>{clearInterval(S.poll);stopPeer();stopMicTest();void leaveVoice();});
+DM?.configure({api,render,notify:popup,userId:()=>S.status?.userId||null,sidebarOpen:()=>S.sidebarOpen});
 $('#remoteAudio').replaceChildren();authGate('loading');void showAuth().catch(err=>{authGate('login');setConnection('FALHA DE CONEXÃO');popup('Não foi possível carregar a conta: '+(err?.message||'erro de rede'));});
 })();

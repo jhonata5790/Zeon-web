@@ -58,3 +58,7 @@ O arquivo `zeon-public-config.json` já usa a **URL e a chave publicável** que 
 - A sessão da versão web fica salva **no armazenamento local do navegador** deste domínio; não compartilhe o dispositivo sem sair da conta. Não armazene senhas no código.
 - Esta versão não tem comunicação entre janelas (Electron IPC), nem instalador Windows.
 - Os testes locais incluíram layout simulado em 1440×850 e 390×844 e verificações do adaptador de API com respostas simuladas. **Ainda não foi validado o funcionamento remoto real entre dois usuários.**
+
+## Mensagens diretas — v0.8.2 Beta 1
+
+Esta versão adiciona conversas privadas individuais sincronizadas entre Web e Windows. Antes de publicar, aplique `sql/zeon-dm-v081.sql` no Supabase uma vez. As regras RLS permitem ler e enviar mensagens apenas aos participantes. Não é criptografia ponta a ponta.
