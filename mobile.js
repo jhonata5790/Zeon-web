@@ -219,7 +219,7 @@
     if(UI.tab==='chats')action('Convidar','share',()=>adapter()?.invite());
     const type=UI.tab==='chats'?'text':'voice';
     const channels=filtered(s.channels.filter(c=>c.type===type),q);
-    $('#zmListCount').textContent=channels.length+' canal'+(channels.length===1?'':'is');
+    $('#zmListCount').textContent=channels.length+' '+(channels.length===1?'canal':'canais');
     if(!channels.length)
       empty(q?'Nenhum canal encontrado.':type==='text'?'Este grupo ainda não tem canais de texto.':'Este grupo ainda não tem salas de voz.');
     channels.forEach(channel=>item({
