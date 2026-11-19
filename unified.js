@@ -194,7 +194,10 @@ async function refreshMessages(){if(S.refreshing||!S.status?.loggedIn)return;S.r
  try{S.messageCache ||= {};for(const id of new Set([active,chat].filter(Boolean))){const data=await api('messages',{channelId:id});S.messageCache[id]=data.reverse();}
  if(active===S.channel&&$('#textMessages'))drawMessages($('#textMessages'),S.messageCache[active]);if(chat===S.joinedVoice)renderCallChat();}
  finally{S.refreshing=false;}}
-async function sendMessage(channelId,text){if(!text?.trim())return;await api('sendMessage',{channelId,text});await refreshMessages();}
+async function sendMessage(channelId,text){if(!text?.trim())return;await api('sendMessage',{channelId,text});
+ // Atualização pode falhar mesmo após o servidor aceitar a mensagem.
+ try{await refreshMessages();}catch(err){console.warn('[Zeon] Mensagem enviada; atualização pendente.',err);}
+}
 async function joinVoice(c){if(!LK())throw Error('Instale as dependências e execute npm run build:media antes de iniciar.');
  await leaveVoice();S.connecting=true;renderWorkspace();
  try{const ticket=await api('livekitToken',{channelId:c.id});if(!ticket?.token||!ticket?.url)throw Error('Token de chamada não retornado.');
