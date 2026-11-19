@@ -116,6 +116,9 @@
     if($('#cv-page')&&!$('#cv-page').hidden){
       if(window.ConsivoProfile?.close?.()===false)return;
     }
+    const active=document.activeElement;
+    if(active?.matches?.('#textInput,#callChatInput,#zmSearch'))active.blur();
+    updateViewport();
     UI.tab=next;UI.mode='home';UI.notice='';search.value='';schedule();
   }
   function openChannel(channel){
@@ -123,7 +126,8 @@
     UI.tab=channel.type==='voice'?'calls':'chats';
     UI.mode='channel';UI.notice='';schedule();
     task(async()=>{
-      await adapter().selectChannel(channel.id);
+      try{await adapter().selectChannel(channel.id);}
+      catch(err){UI.mode='home';throw err;}
       if(channel.type==='voice'&&state()?.joinedVoiceId!==channel.id){
         UI.mode='home';
         throw Error('A chamada não foi conectada. Confira as permissões de áudio e tente novamente.');
