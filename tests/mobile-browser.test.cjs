@@ -34,6 +34,8 @@ async function verify(engine,label,width,height){
   await page.route('**/profile-v080.js',r=>r.fulfill({status:200,contentType:'application/javascript',body:''}));
   await page.route('**/livekit.bundle.js',r=>r.fulfill({status:200,contentType:'application/javascript',body:''}));
   await page.goto('http://127.0.0.1:'+server.address().port+'/',{waitUntil:'networkidle'});
+  const isTouchMobile=await page.evaluate(()=>matchMedia('(pointer: coarse) and (hover: none)').matches);
+  assert.equal(isTouchMobile,true,label+': dispositivo com toque não reconhecido como mobile');
   await page.locator('.zm-item').first().waitFor({state:'visible'});
   assert.equal(await page.locator('#zeon-mobile-root').evaluate(n=>n.hidden),false);
   assert.deepEqual(await page.locator('.zm-item-name').allTextContents(),['geral','criação']);
@@ -43,6 +45,16 @@ async function verify(engine,label,width,height){
   await page.screenshot({path:path.join(out,label+'-login-mobile.png'),fullPage:true});
   await page.locator('#authGate').evaluate(node=>{node.hidden=true;});
   await page.screenshot({path:path.join(out,label+'-conversas.png'),fullPage:true});
+  if(label==='android-390'){
+    // Gira o MESMO dispositivo em execução: a home e as abas não podem sumir.
+    await page.setViewportSize({width:1500,height:700});
+    await page.locator('.zm-home').waitFor({state:'visible'});
+    assert.equal(await page.locator('#zeon-mobile-root').evaluate(n=>n.hidden),false,'mobile caiu no desktop após rotação');
+    const nav=await page.locator('.zm-bottom-nav').evaluate(n=>getComputedStyle(n).display);
+    assert.equal(nav,'grid','abas mobile sumiram no modo horizontal');
+    await page.screenshot({path:path.join(out,'android-rotacao-1500.png'),fullPage:true});
+    await page.setViewportSize({width,height});
+  }
   await page.locator('[data-mobile-tab="groups"]').click();
   await page.locator('#zmTitle').getByText('Grupos').waitFor();
   assert.deepEqual(await page.locator('.zm-item-name').allTextContents(),['Ressonância','Mesa de RPG']);
@@ -85,6 +97,23 @@ async function verify(engine,label,width,height){
   await context.close();
  }finally{await browser.close();}
 }
+async function verifyDesktopNarrow(){
+ const browser=await chromium.launch({headless:true});
+ try{
+  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:false,hasTouch:false});
+  const page=await context.newPage();
+  await page.route('**/web-bridge.js',r=>r.fulfill({status:200,contentType:'application/javascript',body:'window.desktop={isWeb:true};'}));
+  await page.route('**/unified.js',r=>r.fulfill({status:200,contentType:'application/javascript',body:stub}));
+  await page.route('**/profile-v080.js',r=>r.fulfill({status:200,contentType:'application/javascript',body:''}));
+  await page.route('**/livekit.bundle.js',r=>r.fulfill({status:200,contentType:'application/javascript',body:''}));
+  await page.goto('http://127.0.0.1:'+server.address().port+'/',{waitUntil:'networkidle'});
+  assert.equal(await page.evaluate(()=>matchMedia('(pointer: coarse) and (hover: none)').matches),false);
+  assert.equal(await page.locator('#zeon-mobile-root').evaluate(n=>n.hidden),true);
+  assert.equal(await page.locator('.guild-rail').evaluate(n=>getComputedStyle(n).display!=='none'),true);
+  console.log('PASS desktop-390 (desktop com janela estreita)');
+  await context.close();
+ }finally{await browser.close();}
+}
 (async()=>{
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  try{
@@ -93,6 +122,7 @@ async function verify(engine,label,width,height){
   await verify(chromium,'android-980',980,700);
   await verify(chromium,'android-paisagem',844,390);
   await verify(webkit,'iphone-390',390,844);
-  console.log('5 browser viewport scenarios passed');
+  await verifyDesktopNarrow();
+  console.log('6 browser scenarios passed, including rotation and narrow desktop');
  }finally{server.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;server.close();});
