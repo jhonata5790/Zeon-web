@@ -64,6 +64,7 @@
     const target=document.querySelector('[data-action="'+type+'"]');if(target)target.click();
   }
   function show(next){
+    if(tab==='profile'&&next!=='profile')window.ConsivoProfile?.close?.();
     tab=next;home=next!=='profile';
     if(next==='profile'){
       if(window.ConsivoProfile?.openOwn)void window.ConsivoProfile.openOwn();
