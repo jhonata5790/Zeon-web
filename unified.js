@@ -265,7 +265,7 @@ async function submitModal(){const val=$('#modalInput').value.trim();if(!val)ret
  $('#modal').close();if(modalKind?.startsWith('channel-'))await selectGroup(S.group,false);else{S.group=null;await loadGroups();if(newGroupId)await selectGroup(newGroupId);}}
 async function refreshDevices(){const items=await navigator.mediaDevices.enumerateDevices();
  for(const [id,kind,key] of [['micSelect','audioinput','microphoneId'],['cameraSelect','videoinput','cameraId'],['speakerSelect','audiooutput','speakerId']]){
- const sel=$('#'+id);sel.innerHTML='<option value="">Padrão do Windows</option>';
+ const sel=$('#'+id);sel.innerHTML='<option value="">'+(window.desktop?.isWeb?'Padrão do dispositivo':'Padrão do Windows')+'</option>';
  for(const d of items.filter(x=>x.kind===kind)){const op=document.createElement('option');op.value=d.deviceId;op.textContent=d.label||kind;sel.add(op);}sel.value=prefs[key]||'';}}
 function refreshSettingValues(){for(const id of ['cameraResolution','cameraFps','cameraFit','shareResolution','shareFps','captureResolution','captureFps']){
  const el=$('#'+id);if(el)el.value=String(id.startsWith('capture')?prefs[id==='captureResolution'?'shareResolution':'shareFps']:prefs[id]);}
