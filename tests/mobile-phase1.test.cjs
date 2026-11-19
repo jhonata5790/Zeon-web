@@ -51,8 +51,8 @@ test('troca de tela e chamadas usam estado real, sem mensagens falsas',()=>{
   assert.doesNotMatch(ui,/fetch\(['"]https?:\/\//); // nenhuma API nova específica do mobile
 });
 test('o CSS limita o novo layout ao celular e protege telas de autenticação',()=>{
-  assert.match(css,/@media\(max-width:740px\)/);
-  assert.match(css,/@media\(min-width:741px\)/);
+  assert.match(css,/@media\s*\(max-width:740px\),\s*\(max-height:500px\) and \(pointer:coarse\)/);
+  assert.match(ui,/max-height: 500px/);
   assert.match(css,/#zeon-mobile-root\[hidden\]/);
   assert.match(ui,/\$\('#authGate'\)\?\.hidden/);
   assert.match(ui,/state\(\)\?\.ready/);
