@@ -328,5 +328,9 @@
   if(!mq.addEventListener)mq.addListener(schedule);
   const gate=$('#authGate');
   if(gate)new MutationObserver(schedule).observe(gate,{attributes:true,attributeFilter:['hidden']});
+  // Chamadas podem re-renderizar controles sem disparar o evento geral de interface.
+  const stage=$('#workspace'),dock=$('#callDock');
+  if(stage)new MutationObserver(adaptMediaButtons).observe(stage,{childList:true,subtree:true});
+  if(dock)new MutationObserver(()=>{adaptMediaButtons();schedule();}).observe(dock,{childList:true,subtree:true});
   updateViewport();schedule();
 })();
