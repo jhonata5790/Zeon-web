@@ -1,9 +1,10 @@
 /* Zeon Web Mobile — Fase 1
- * Layout próprio até 740px. Desktop, contas e backend permanecem compartilhados.
+ * Seleção do layout por capacidades do dispositivo, nunca pelo tamanho da janela.
+ * PCs com mouse/hover continuam no desktop mesmo com a janela estreita.
  */
 #zeon-mobile-root[hidden],#zeon-mobile-root [hidden]{display:none!important}
 
-@media (max-width:740px), (max-height:500px) and (pointer:coarse), (max-width:1200px) and (pointer:coarse) {
+@media (pointer:coarse) and (hover:none) {
   :root{
     --zm-bg:#100e18;--zm-panel:#1d182a;--zm-panel-hover:#29213b;
     --zm-edge:#3c3151;--zm-purple:#af89fa;--zm-light:#f4efff;
@@ -304,7 +305,7 @@
   .auth-panel input{font-size:16px!important}
 }
 
-@media(max-width:400px){
+@media(max-width:400px) and (pointer:coarse) and (hover:none){
   .zm-home{padding-left:12px;padding-right:12px}
   .zm-brand{margin-bottom:25px}
   .zm-heading h1{font-size:27px}
@@ -316,7 +317,7 @@
   .app-shell .call-dock .call-state{flex:1 1 150px}
 }
 
-@media (max-width:740px), (max-height:500px) and (pointer:coarse), (max-width:1200px) and (pointer:coarse) {
+@media (pointer:coarse) and (hover:none) {
   /* O compositor fica visível quando o teclado ocupa o fim da tela. */
   html.zm-chat-typing .zm-bottom-nav{display:none!important}
   html.zm-chat-typing .app-shell .content-area{
