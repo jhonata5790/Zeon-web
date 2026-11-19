@@ -2,9 +2,8 @@
  * Layout próprio até 740px. Desktop, contas e backend permanecem compartilhados.
  */
 #zeon-mobile-root[hidden],#zeon-mobile-root [hidden]{display:none!important}
-@media(min-width:741px){#zeon-mobile-root{display:none!important}}
 
-@media(max-width:740px){
+@media (max-width:740px), (max-height:500px) and (pointer:coarse) {
   :root{
     --zm-bg:#100e18;--zm-panel:#1d182a;--zm-panel-hover:#29213b;
     --zm-edge:#3c3151;--zm-purple:#af89fa;--zm-light:#f4efff;
@@ -290,7 +289,7 @@
   .app-shell .call-dock .call-state{flex:1 1 150px}
 }
 
-@media(max-width:740px){
+@media (max-width:740px), (max-height:500px) and (pointer:coarse) {
   /* O compositor fica visível quando o teclado ocupa o fim da tela. */
   html.zm-chat-typing .zm-bottom-nav{display:none!important}
   html.zm-chat-typing .app-shell .content-area{
