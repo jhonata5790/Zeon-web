@@ -4,7 +4,7 @@
  * O código não envia dados a servidores fora do backend já configurado no Web.
  */
 (() => {
-  const mq=window.matchMedia('(max-width: 740px)');
+  const mq=window.matchMedia('(max-width: 740px), (max-height: 500px) and (pointer: coarse)');
   const $=selector=>document.querySelector(selector);
   const root=document.createElement('div');
   root.id='zeon-mobile-root';
