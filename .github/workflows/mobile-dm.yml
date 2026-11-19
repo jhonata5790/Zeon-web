@@ -1,0 +1,23 @@
+name: Zeon Mobile + Mensagens Privadas
+on:
+  push:
+    branches:
+      - feature/mobile-com-dm-v2
+  pull_request:
+    branches:
+      - main
+permissions:
+  contents: read
+jobs:
+  mobile-dm:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar ambiente DOM isolado
+        run: npm install --no-save --package-lock=false --ignore-scripts jsdom@26.1.0
+      - name: Validar mobile, DMs e compatibilidade
+        run: node --test tests/mobile-dm.test.cjs
