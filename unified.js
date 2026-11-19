@@ -38,6 +38,7 @@ function authGate(stage){
  const gate=$('#authGate');gate.hidden=stage==='ready';
  $('#setupScreen').hidden=stage!=='setup';$('#loginScreen').hidden=stage!=='login';$('#loadingScreen').hidden=stage!=='loading';
  $('.app-shell').classList.toggle('auth-locked',stage!=='ready');
+ document.dispatchEvent(new CustomEvent('zeon:web-auth'));
 }
 async function showAuth(){authGate('loading');S.status=await api('status');
  if(!S.status.configured){authGate('setup');setConnection('CONFIGURAR ONLINE');return;}
@@ -80,7 +81,9 @@ function renderHeader(){const c=channel();$('#channelName').textContent=c?.name|
  $('.app-shell').classList.toggle('call-chat-open',!!(canChat&&S.chatOpen));
  $('#inviteButton').hidden=!S.group;$('#inviteButton').textContent='✉ Convidar';
 }
-function render(){renderGroups();renderChannels();renderHeader();renderWorkspace();renderDock();renderCallChat();syncFloat();}
+function render(){renderGroups();renderChannels();renderHeader();renderWorkspace();renderDock();renderCallChat();syncFloat();
+ document.dispatchEvent(new CustomEvent('zeon:web-render'));
+}
 function renderWorkspace(){const c=channel(),root=$('#workspace');
  // Não destrua vídeos enquanto a mesma chamada estiver visível. Recriar o <video>
  // por causa de um evento de voz causava tela preta/piscadas durante a transmissão.
@@ -499,6 +502,26 @@ async function initConsivoDebug(){
 }
 void initConsivoDebug();
 
+// A interface Web Mobile pode usar estas ações sem acessar o estado interno ou duplicar o backend.
+window.ZeonMobileAdapter=Object.freeze({
+ snapshot:()=>({
+  ready:!!S.status?.loggedIn,groupId:S.group,channelId:S.channel,role:S.role,
+  groups:S.groups.map(g=>({id:g.id,name:g.name})),
+  channels:S.channels.map(c=>({id:c.id,name:c.name,type:c.type,adminOnly:!!c.admin_only})),
+  groupName:group()?.name||'',joinedVoiceId:S.joinedVoice,
+  joinedVoiceName:joinedChannel()?.name||'',inCall:!!S.room,
+  displayName:displayName()
+ }),
+ selectGroup:id=>selectGroup(id),
+ selectChannel:id=>selectChannel(id),
+ newGroup:()=>openModal('group'),
+ joinGroup:()=>openModal('join'),
+ newChannel:type=>openModal(type==='voice'?'channel-voice':'channel-text'),
+ invite:()=>$('#inviteButton').click(),
+ settings:()=>openSettings(),
+ signOut:()=>$('#signOutBtn').click(),
+ leaveVoice:()=>leaveVoice()
+});
 window.addEventListener('beforeunload',()=>{clearInterval(S.poll);stopPeer();stopMicTest();void leaveVoice();});
 $('#remoteAudio').replaceChildren();authGate('loading');void showAuth().catch(err=>{authGate('login');setConnection('FALHA DE CONEXÃO');popup('Não foi possível carregar a conta: '+(err?.message||'erro de rede'));});
 })();
