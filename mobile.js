@@ -98,7 +98,11 @@
     if(isProfile){
       const name=$('#footerName')?.textContent?.trim()||'Você';
       item(name,'Abrir perfil e personalizar',name.slice(0,1).toUpperCase(),'›',()=>{
-        if(window.ConsivoProfile?.openOwn)void window.ConsivoProfile.openOwn();
+        if(!window.ConsivoProfile?.openOwn)return;
+        home=false;sync();
+        Promise.resolve(window.ConsivoProfile.openOwn()).catch(()=>{
+          home=true;sync();
+        });
       });
       action('Configurações',()=>nativeAction('settings'));
       action('Sair da conta',()=>$('#signOutBtn')?.click());
@@ -171,6 +175,15 @@
     if(e.target.closest('[data-mobile-action="create"]'))nativeAction('new-group');
   });
   search.addEventListener('input',()=>{if(home)draw();});
+  document.addEventListener('click',event=>{
+    if(!mq.matches||tab!=='profile'||home)return;
+    if(event.target.closest('#cv-page [data-cv-action="back"]')){
+      // O botão do perfil pode pedir confirmação antes de sair da edição.
+      queueMicrotask(()=>{
+        if($('#cv-page')?.hidden){home=true;sync();}
+      });
+    }
+  });
   document.addEventListener('click',e=>{
     if(!mq.matches)return;
     if(e.target.closest('#sidebarToggle')){
