@@ -2,7 +2,7 @@
 
 Esta implementação é **Web Mobile**, não um APK e não o aplicativo Windows.
 Ela usa a base Web existente (Supabase + LiveKit), mas apresenta navegação mobile própria.
-**Não mesclar esta branch em \`main\` nem publicar o site principal antes da revisão.**
+**Não mesclar esta branch em `main` nem publicar o site principal antes da revisão.**
 
 ## Entregas incluídas
 
@@ -24,7 +24,7 @@ Ela usa a base Web existente (Supabase + LiveKit), mas apresenta navegação mob
 
 ## Verificações automatizadas
 
-O workflow GitHub Actions \`.github/workflows/mobile-phase1.yml\` executa:
+O workflow GitHub Actions `.github/workflows/mobile-phase1.yml` executa:
 
 - testes de contrato (arquivos, JavaScript, importações, APIs e CSS)
 - testes de interação simulada com DOM (abas, pesquisa, grupos, canais, chamadas, perfil e logout)
@@ -33,7 +33,7 @@ Esses testes ajudam a detectar regressões, mas **não simulam WebRTC real, tecl
 
 ## Testes manuais necessários antes de publicar
 
-Usar a branch de teste em servidor local HTTPS ou localhost, **sem mesclar em \`main\`**.
+Usar a branch de teste em servidor local HTTPS ou localhost, **sem mesclar em `main`**.
 Preferir ao menos um Android e, se possível, um iPhone.
 
 - [ ] Entrar, atualizar a página e continuar autenticado; sair e entrar novamente
