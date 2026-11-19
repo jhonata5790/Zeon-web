@@ -9,7 +9,7 @@ const home=join(__dirname,'..');
 const html=readFileSync(join(home,'index.html'),'utf8');
 const mobile=readFileSync(join(home,'mobile.js'),'utf8');
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-async function harness(){
+async function harness({mobile=true}={}){
   const dom=new JSDOM(html,{url:'https://zeon.example/',runScripts:'outside-only',pretendToBeVisual:true});
   const {window:w}=dom,d=w.document;
   const state={
@@ -20,7 +20,7 @@ async function harness(){
               {id:'v1',name:'sala principal',type:'voice',adminOnly:false}]
   };
   const calls={selectedGroups:[],selectedChannels:[],newGroup:0,joinGroup:0,newChannel:[],invite:0,settings:0,signOut:0,openProfile:0};
-  w.matchMedia=()=>({matches:true,addEventListener(){},removeEventListener(){}});
+  w.matchMedia=query=>({matches:mobile,media:query,addEventListener(){},removeEventListener(){}});
   w.visualViewport={height:780,addEventListener(){}};
   w.requestAnimationFrame=callback=>w.setTimeout(()=>callback(Date.now()),0);
   w.cancelAnimationFrame=id=>w.clearTimeout(id);
@@ -169,5 +169,14 @@ test('teclado de chat fecha e a navegação reaparece ao voltar',async()=>{
     click(x.d,'#sidebarToggle');await wait(35);
     assert.equal(x.d.documentElement.classList.contains('zm-chat-typing'),false);
     assert.equal(x.d.getElementById('zeon-mobile-root').classList.contains('zm-show-home'),true);
+  }finally{x.close();}
+});
+
+test('janela estreita no computador mantém o Zeon Desktop',async()=>{
+  const x=await harness({mobile:false});
+  try{
+    assert.equal(x.d.getElementById('zeon-mobile-root').hidden,true);
+    assert.equal(x.d.getElementById('authGate').hidden,true);
+    assert.equal(x.d.querySelectorAll('.zm-bottom-nav button').length,4);
   }finally{x.close();}
 });
