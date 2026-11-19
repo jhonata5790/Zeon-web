@@ -243,6 +243,17 @@
       back.setAttribute('aria-label','Abrir ou fechar canais');
     }
   }
+  function adaptMediaButtons(){
+    if(!mq.matches)return;
+    const supported=!!navigator.mediaDevices?.getDisplayMedia;
+    const buttons=document.querySelectorAll('#workspace [data-action="share"],#callDock [data-action="share"]');
+    buttons.forEach(button=>{
+      if(supported)return;
+      button.disabled=true;
+      button.title='Transmissão de tela indisponível neste navegador';
+      button.setAttribute('aria-label','Transmissão de tela indisponível neste navegador');
+    });
+  }
   function render(){
     pending=false;syncBackButton();
     const s=state(),visible=available();
@@ -260,6 +271,7 @@
       button.disabled=UI.working;
     });
     error.hidden=!UI.notice;error.textContent=UI.notice;
+    adaptMediaButtons();
     if(UI.mode==='home')draw(s);
   }
   function schedule(){
