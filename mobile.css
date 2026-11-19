@@ -28,7 +28,7 @@
 
   /* Barra de sala: a seta retorna ao painel mobile. */
   .app-shell .topbar{
-    display:flex;gap:8px;height:60px;min-height:60px;padding:env(safe-area-inset-top) 12px 0;
+    display:flex;gap:8px;height:calc(60px + env(safe-area-inset-top));min-height:calc(60px + env(safe-area-inset-top));padding:env(safe-area-inset-top) 12px 0;
     background:#181320;border-bottom:1px solid var(--zm-edge);
   }
   .app-shell .topbar .breadcrumb{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
@@ -66,7 +66,18 @@
     width:34px;height:34px;flex:0 0 34px;font-size:12px;
     border:1px solid #68528e;
   }
-  .app-shell #workspace .text-messages .message>div{min-width:0;flex:1}
+  .app-shell #workspace .text-messages .message>div{
+    min-width:0;flex:0 1 auto;max-width:calc(100% - 45px);
+    background:#251e35;border:1px solid #3d3154;
+    padding:10px 12px;border-radius:6px 15px 15px 15px;
+  }
+  .app-shell #workspace .text-messages .message.own{
+    flex-direction:row-reverse;align-self:stretch
+  }
+  .app-shell #workspace .text-messages .message.own>div{
+    background:#3d2c63;border-color:#71549b;
+    border-radius:15px 6px 15px 15px;
+  }
   .app-shell #workspace .text-messages .message-meta{
     color:#ded0f8;font-size:12px;line-height:1.45;
   }
@@ -112,7 +123,7 @@
   .app-shell .call-layout .voice-control svg{width:21px;height:21px}
   .app-shell.call-chat-open .chat-panel{
     display:flex!important;position:fixed!important;left:0!important;right:0!important;
-    width:100%!important;top:60px!important;
+    width:100%!important;top:calc(60px + env(safe-area-inset-top))!important;
     bottom:calc(var(--zm-nav-height) + env(safe-area-inset-bottom))!important;
     z-index:60!important;background:#171321;box-shadow:none!important;
   }
@@ -285,7 +296,10 @@
   html.zm-chat-typing .app-shell .content-area{
     height:var(--zm-height);max-height:var(--zm-height);
   }
-  html.zm-chat-typing .app-shell.call-chat-open .chat-panel{bottom:0!important}
+  html.zm-chat-typing .app-shell.call-chat-open .chat-panel{
+    bottom:auto!important;
+    height:calc(var(--zm-height) - 60px - env(safe-area-inset-top));
+  }
   html.zm-chat-typing .app-shell #workspace .text-composer{
     margin-bottom:calc(6px + env(safe-area-inset-bottom));
   }
