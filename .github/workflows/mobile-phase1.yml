@@ -1,0 +1,44 @@
+name: Zeon Web Mobile — verificações
+on:
+  push:
+    branches:
+      - feature/zeon-mobile-navigation
+  pull_request:
+    branches:
+      - main
+permissions:
+  contents: read
+jobs:
+  mobile-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar ambiente de testes DOM
+        run: npm install --no-save --package-lock=false --ignore-scripts jsdom@26.1.0
+      - name: Verificar arquivos e interações Web Mobile
+        run: node --test tests/mobile-phase1.test.cjs tests/mobile-interaction.test.cjs
+
+  mobile-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Playwright e os navegadores
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps chromium webkit
+      - name: Testar interface em navegadores mobile simulados
+        run: node tests/mobile-browser.test.cjs
+      - name: Salvar capturas para revisão visual
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zeon-mobile-browser-screenshots
+          path: artifacts/mobile-browser/
+          if-no-files-found: ignore

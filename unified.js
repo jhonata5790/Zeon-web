@@ -38,6 +38,7 @@ function authGate(stage){
  const gate=$('#authGate');gate.hidden=stage==='ready';
  $('#setupScreen').hidden=stage!=='setup';$('#loginScreen').hidden=stage!=='login';$('#loadingScreen').hidden=stage!=='loading';
  $('.app-shell').classList.toggle('auth-locked',stage!=='ready');
+ document.dispatchEvent(new CustomEvent('zeon:web-auth'));
 }
 async function showAuth(){authGate('loading');S.status=await api('status');
  if(!S.status.configured){authGate('setup');setConnection('CONFIGURAR ONLINE');return;}
@@ -80,7 +81,9 @@ function renderHeader(){const c=channel();$('#channelName').textContent=c?.name|
  $('.app-shell').classList.toggle('call-chat-open',!!(canChat&&S.chatOpen));
  $('#inviteButton').hidden=!S.group;$('#inviteButton').textContent='✉ Convidar';
 }
-function render(){renderGroups();renderChannels();renderHeader();renderWorkspace();renderDock();renderCallChat();syncFloat();}
+function render(){renderGroups();renderChannels();renderHeader();renderWorkspace();renderDock();renderCallChat();syncFloat();
+ document.dispatchEvent(new CustomEvent('zeon:web-render'));
+}
 function renderWorkspace(){const c=channel(),root=$('#workspace');
  // Não destrua vídeos enquanto a mesma chamada estiver visível. Recriar o <video>
  // por causa de um evento de voz causava tela preta/piscadas durante a transmissão.
@@ -91,7 +94,16 @@ function renderWorkspace(){const c=channel(),root=$('#workspace');
  }
  renderVoice(c);
 }
-function renderText(c){$('#workspace').className='workspace text-workspace';$('#workspace').innerHTML=`<div class="text-channel-view"><div class="text-channel-heading"><div><span class="hero-label">✦ CANAL DE TEXTO</span><h2># ${escape(c.name)}</h2><p>Mensagens sincronizadas com o grupo.</p></div>${c.admin_only?'<span class="hero-badge">◆ SÓ ADMINISTRADORES</span>':''}</div><div class="text-messages" id="textMessages" role="log"></div><form class="text-composer" id="textForm"><input id="textInput" maxlength="700" autocomplete="off" placeholder="Mensagem em # ${escape(c.name)}" aria-label="Mensagem" ${c.admin_only&&!['owner','admin'].includes(S.role)?'disabled':''}/><button type="submit" ${c.admin_only&&!['owner','admin'].includes(S.role)?'disabled':''} aria-label="Enviar">➤</button></form></div>`;
+function renderText(c){
+ const previous=$('#textInput');S.textDrafts ||= {};
+ if(previous?.dataset.channelId)S.textDrafts[previous.dataset.channelId]=previous.value;
+ const keepFocus=!!(previous&&document.activeElement===previous&&previous.dataset.channelId===c.id);
+ $('#workspace').className='workspace text-workspace';$('#workspace').innerHTML=`<div class="text-channel-view"><div class="text-channel-heading"><div><span class="hero-label">✦ CANAL DE TEXTO</span><h2># ${escape(c.name)}</h2><p>Mensagens sincronizadas com o grupo.</p></div>${c.admin_only?'<span class="hero-badge">◆ SÓ ADMINISTRADORES</span>':''}</div><div class="text-messages" id="textMessages" role="log"></div><form class="text-composer" id="textForm"><input id="textInput" data-channel-id="${escape(c.id)}" maxlength="700" autocomplete="off" placeholder="Mensagem em # ${escape(c.name)}" aria-label="Mensagem" ${c.admin_only&&!['owner','admin'].includes(S.role)?'disabled':''}/><button type="submit" ${c.admin_only&&!['owner','admin'].includes(S.role)?'disabled':''} aria-label="Enviar">➤</button></form></div>`;
+ const nextInput=$('#textInput');
+ if(nextInput){
+   nextInput.value=S.textDrafts[c.id]||'';
+   if(keepFocus){nextInput.focus({preventScroll:true});nextInput.setSelectionRange(nextInput.value.length,nextInput.value.length);}
+ }
  const msgs=S.messageCache?.[c.id];if(msgs)drawMessages($('#textMessages'),msgs);
 }
 let bound=[];function detach(){for(const [t,element] of bound){try{t.detach(element);}catch{}}bound=[];}
@@ -168,7 +180,7 @@ function renderDock(){const active=!!S.room;$('#callDock').hidden=!active;
  const p=S.room.localParticipant;$('#callDock').innerHTML=`<div class="call-state"><span class="call-indicator">◖))</span><div><strong>Conectado à chamada</strong><small>${escape(joinedChannel()?.name||'Canal de voz')}</small></div></div><div class="call-buttons"><button class="dock-button ${p.isMicrophoneEnabled?'purple':'off'}" data-action="mic" aria-label="Microfone">${icon(p.isMicrophoneEnabled?'microphone':'microphone-off')}</button><button class="dock-button ${p.isCameraEnabled?'purple':''}" data-action="camera" aria-label="Câmera">${icon(p.isCameraEnabled?'camera':'camera-off')}</button><button class="dock-button ${p.isScreenShareEnabled?'sharing':''}" data-action="share" aria-label="Transmissão">${icon('share')}</button>${window.desktop?.isWeb?'':`<button class="dock-button purple" data-action="floating" title="Janela flutuante" aria-label="Janela flutuante">${icon('floating')}</button>`}<button class="dock-button end" data-action="leave" aria-label="Sair da chamada">${icon('leave')}</button></div>`;
 }
 function drawMessages(root,records=[]){if(!root)return;const wasBottom=root.scrollTop+root.clientHeight>=root.scrollHeight-100;
- root.innerHTML=records.length?records.map(m=>`<div class="message" data-author-id="${escape(m.author_id)}"><span class="avatar">${escape(initials(m.author_name))}</span><div><div class="message-meta">${escape(m.author_name||'Participante')} <time>${new Date(m.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</time></div><div class="message-text">${escape(m.body)}</div></div></div>`).join(''):'<div class="chat-empty"><strong>Sem mensagens ainda</strong><p>Comece uma conversa neste canal.</p></div>';
+ root.innerHTML=records.length?records.map(m=>`<div class="message ${m.author_id&&m.author_id===S.status?.userId?'own':''}" data-author-id="${escape(m.author_id)}"><span class="avatar">${escape(initials(m.author_name))}</span><div><div class="message-meta">${escape(m.author_name||'Participante')} <time>${new Date(m.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</time></div><div class="message-text">${escape(m.body)}</div></div></div>`).join(''):'<div class="chat-empty"><strong>Sem mensagens ainda</strong><p>Comece uma conversa neste canal.</p></div>';
  if(wasBottom)root.scrollTop=root.scrollHeight;
 }
 function renderCallChat(){const enabled=!!(S.chatOpen&&channel()?.type==='voice'&&S.joinedVoice===S.channel);
@@ -182,7 +194,10 @@ async function refreshMessages(){if(S.refreshing||!S.status?.loggedIn)return;S.r
  try{S.messageCache ||= {};for(const id of new Set([active,chat].filter(Boolean))){const data=await api('messages',{channelId:id});S.messageCache[id]=data.reverse();}
  if(active===S.channel&&$('#textMessages'))drawMessages($('#textMessages'),S.messageCache[active]);if(chat===S.joinedVoice)renderCallChat();}
  finally{S.refreshing=false;}}
-async function sendMessage(channelId,text){if(!text?.trim())return;await api('sendMessage',{channelId,text});await refreshMessages();}
+async function sendMessage(channelId,text){if(!text?.trim())return;await api('sendMessage',{channelId,text});
+ // Atualização pode falhar mesmo após o servidor aceitar a mensagem.
+ try{await refreshMessages();}catch(err){console.warn('[Zeon] Mensagem enviada; atualização pendente.',err);}
+}
 async function joinVoice(c){if(!LK())throw Error('Instale as dependências e execute npm run build:media antes de iniciar.');
  await leaveVoice();S.connecting=true;renderWorkspace();
  try{const ticket=await api('livekitToken',{channelId:c.id});if(!ticket?.token||!ticket?.url)throw Error('Token de chamada não retornado.');
@@ -253,7 +268,7 @@ async function submitModal(){const val=$('#modalInput').value.trim();if(!val)ret
  $('#modal').close();if(modalKind?.startsWith('channel-'))await selectGroup(S.group,false);else{S.group=null;await loadGroups();if(newGroupId)await selectGroup(newGroupId);}}
 async function refreshDevices(){const items=await navigator.mediaDevices.enumerateDevices();
  for(const [id,kind,key] of [['micSelect','audioinput','microphoneId'],['cameraSelect','videoinput','cameraId'],['speakerSelect','audiooutput','speakerId']]){
- const sel=$('#'+id);sel.innerHTML='<option value="">Padrão do Windows</option>';
+ const sel=$('#'+id);sel.innerHTML='<option value="">'+(window.desktop?.isWeb?'Padrão do dispositivo':'Padrão do Windows')+'</option>';
  for(const d of items.filter(x=>x.kind===kind)){const op=document.createElement('option');op.value=d.deviceId;op.textContent=d.label||kind;sel.add(op);}sel.value=prefs[key]||'';}}
 function refreshSettingValues(){for(const id of ['cameraResolution','cameraFps','cameraFit','shareResolution','shareFps','captureResolution','captureFps']){
  const el=$('#'+id);if(el)el.value=String(id.startsWith('capture')?prefs[id==='captureResolution'?'shareResolution':'shareFps']:prefs[id]);}
@@ -416,7 +431,19 @@ $('#modalForm').addEventListener('submit',e=>{e.preventDefault();void task(submi
 document.addEventListener('submit',e=>{if(!['textForm','callChatForm'].includes(e.target.id))return;e.preventDefault();
  const form=e.target,voice=form.id==='callChatForm',id=voice?S.joinedVoice:S.channel;
  const input=form.querySelector('input');if(!id||!input?.value.trim())return;
- const value=input.value;input.value='';void task(async()=>{await sendMessage(id,value);});});
+ const value=input.value;input.value='';
+ if(!voice){S.textDrafts ||= {};S.textDrafts[id]='';}
+ void task(async()=>{try{await sendMessage(id,value);}
+ catch(err){
+  const current=voice?$('#callChatInput'):$('#textInput');
+  const sameChannel=voice?S.joinedVoice===id:S.channel===id;
+  if(current&&sameChannel){
+   current.value=value+(current.value?' '+current.value:'');
+   if(!voice)S.textDrafts[id]=current.value;
+  }else if(!voice)S.textDrafts[id]=value;
+  throw err;
+ }
+ });});
 document.addEventListener('change',e=>{const key={micSelect:'microphoneId',cameraSelect:'cameraId',speakerSelect:'speakerId'}[e.target.id];
  if(key){prefs[key]=e.target.value;if(key==='speakerId')for(const audio of $('#remoteAudio').querySelectorAll('audio'))audio.setSinkId?.(prefs.speakerId||'default').catch?.(()=>{});if(key==='cameraId'){S.cameraModes=null;$('#cameraCompatibilityStatus').textContent='Faça nova verificação para esta câmera.';}savePrefs();return;}
  if(['cameraResolution','cameraFps','cameraFit','shareResolution','shareFps','captureResolution','captureFps'].includes(e.target.id)){
@@ -499,6 +526,26 @@ async function initConsivoDebug(){
 }
 void initConsivoDebug();
 
+// A interface Web Mobile pode usar estas ações sem acessar o estado interno ou duplicar o backend.
+window.ZeonMobileAdapter=Object.freeze({
+ snapshot:()=>({
+  ready:!!S.status?.loggedIn,groupId:S.group,channelId:S.channel,role:S.role,
+  groups:S.groups.map(g=>({id:g.id,name:g.name})),
+  channels:S.channels.map(c=>({id:c.id,name:c.name,type:c.type,adminOnly:!!c.admin_only})),
+  groupName:group()?.name||'',joinedVoiceId:S.joinedVoice,
+  joinedVoiceName:joinedChannel()?.name||'',inCall:!!S.room,
+  displayName:displayName()
+ }),
+ selectGroup:id=>selectGroup(id),
+ selectChannel:id=>selectChannel(id),
+ newGroup:()=>openModal('group'),
+ joinGroup:()=>openModal('join'),
+ newChannel:type=>openModal(type==='voice'?'channel-voice':'channel-text'),
+ invite:()=>$('#inviteButton').click(),
+ settings:()=>openSettings(),
+ signOut:()=>$('#signOutBtn').click(),
+ leaveVoice:()=>leaveVoice()
+});
 window.addEventListener('beforeunload',()=>{clearInterval(S.poll);stopPeer();stopMicTest();void leaveVoice();});
 $('#remoteAudio').replaceChildren();authGate('loading');void showAuth().catch(err=>{authGate('login');setConnection('FALHA DE CONEXÃO');popup('Não foi possível carregar a conta: '+(err?.message||'erro de rede'));});
 })();
