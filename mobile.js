@@ -1,10 +1,12 @@
 'use strict';
 /* Zeon Web Mobile — fase 1
+ * O modo mobile é escolhido pela interação por toque (sem hover), não pela largura.
+ * A orientação horizontal conserva a mesma interface.
  * Interface mobile usa o adaptador do Zeon Web: nenhuma conta ou mensagem é simulada.
  * O código não envia dados a servidores fora do backend já configurado no Web.
  */
 (() => {
-  const mq=window.matchMedia('(max-width: 740px), (max-height: 500px) and (pointer: coarse), (max-width: 1200px) and (pointer: coarse)');
+  const mq=window.matchMedia('(pointer: coarse) and (hover: none)');
   const $=selector=>document.querySelector(selector);
   const root=document.createElement('div');
   root.id='zeon-mobile-root';
