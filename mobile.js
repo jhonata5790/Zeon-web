@@ -297,6 +297,185 @@
       button.setAttribute('aria-label','Transmissão de tela indisponível neste navegador');
     });
   }
+  // Tela cheia REAL para transmissões em aparelhos touch.
+  // A tela é orientada pelo formato RECEBIDO (videoWidth/videoHeight),
+  // não pelo dispositivo do remetente nem pelo tamanho do navegador.
+  let fullShare=null;
+  const shareIcons=new WeakMap();
+  function shareButton(){
+    return document.querySelector('.call-broadcast .broadcast-focus-toggle');
+  }
+  function syncShareButton(){
+    if(fullShare&&(!fullShare.stage.isConnected||!document.querySelector('#callSharedScreen'))){
+      resetShareFullscreen();
+    }
+    const button=shareButton();
+    if(!button)return;
+    const active=!!(fullShare&&fullShare.stage===button.closest('.call-broadcast'));
+    const mode=active?'exit':'enter';
+    if(button.dataset.zmFullscreenUi===mode)return;
+    if(!shareIcons.has(button))shareIcons.set(button,button.innerHTML);
+    button.dataset.zmFullscreenUi=mode;
+    button.title=active?'Sair da tela cheia':'Assistir em tela cheia';
+    button.setAttribute('aria-label',button.title);
+    button.setAttribute('aria-pressed',String(active));
+    if(active)button.textContent='×';
+    else button.innerHTML=shareIcons.get(button);
+  }
+  function fullscreenVideoOrientation(video){
+    const track=video?.srcObject?.getVideoTracks?.()[0];
+    const settings=track?.getSettings?.()||{};
+    const width=video?.videoWidth||settings.width||0;
+    const height=video?.videoHeight||settings.height||0;
+    if(width<2||height<2)return null; // aguarda metadados reais do stream
+    if(width/height>1.12)return 'landscape';
+    if(height/width>1.12)return 'portrait';
+    return null; // fontes quadradas: não forçar uma orientação
+  }
+  function orientationHint(session,orientation){
+    if(!session||fullShare!==session)return;
+    let hint=session.stage.querySelector('.zm-share-orientation-hint');
+    if(!hint){
+      hint=document.createElement('div');
+      hint.className='zm-share-orientation-hint';
+      hint.setAttribute('role','status');
+      session.stage.append(hint);
+    }
+    hint.textContent=orientation==='landscape'
+      ?'Para ver melhor, gire o celular na horizontal.'
+      :'Para ver melhor, gire o celular na vertical.';
+    hint.hidden=false;
+  }
+  function clearOrientationHint(session){
+    session?.stage?.querySelector('.zm-share-orientation-hint')?.remove();
+  }
+  async function syncShareOrientation(){
+    const session=fullShare;
+    if(!session||session.mode!=='element')return;
+    const desired=fullscreenVideoOrientation(session.video);
+    if(!desired||desired===session.requestedOrientation)return;
+    session.requestedOrientation=desired;
+    const orientation=window.screen?.orientation;
+    if(typeof orientation?.lock!=='function'){
+      orientationHint(session,desired);
+      return;
+    }
+    try{
+      await orientation.lock(desired);
+      if(fullShare===session){
+        session.locked=true;
+        clearOrientationHint(session);
+      }
+    }catch(error){
+      // Bloqueio de orientação depende do navegador, permissões e SO.
+      if(fullShare===session){
+        orientationHint(session,desired);
+        console.info('[Zeon Mobile] Orientação automática indisponível:',error?.name||error);
+      }
+    }
+  }
+  function shareVideoSizeChange(){
+    void syncShareOrientation();
+  }
+  function resetShareFullscreen(){
+    const session=fullShare;
+    if(!session)return;
+    fullShare=null;
+    session.video?.removeEventListener('loadedmetadata',shareVideoSizeChange);
+    session.video?.removeEventListener('resize',shareVideoSizeChange);
+    session.video?.removeEventListener('webkitendfullscreen',onNativeVideoExit);
+    session.stage.classList.remove('zm-share-immersive');
+    document.body.classList.remove('zm-share-immersive-active');
+    clearOrientationHint(session);
+    if(session.locked){
+      try{window.screen?.orientation?.unlock?.();}catch{}
+    }
+    syncShareButton();
+  }
+  function onNativeVideoExit(){
+    if(fullShare?.mode==='video')resetShareFullscreen();
+  }
+  function onFullscreenChanged(){
+    if(fullShare?.mode!=='element')return;
+    if(document.fullscreenElement===fullShare.stage){
+      syncShareButton();
+      void syncShareOrientation();
+    }else{
+      resetShareFullscreen();
+    }
+  }
+  async function exitShareFullscreen(){
+    const session=fullShare;
+    if(!session)return;
+    if(session.mode==='element'&&document.fullscreenElement===session.stage){
+      try{await document.exitFullscreen();}catch{resetShareFullscreen();}
+    }else if(session.mode==='video'){
+      try{session.video?.webkitExitFullscreen?.();}catch{}
+      resetShareFullscreen();
+    }else{
+      resetShareFullscreen();
+    }
+    if(fullShare===session)resetShareFullscreen();
+  }
+  async function enterShareFullscreen(stage){
+    const video=stage?.querySelector('#callSharedScreen');
+    if(!video||fullShare)return;
+    const session={stage,video,mode:null,locked:false,requestedOrientation:null};
+    fullShare=session;
+    video.addEventListener('loadedmetadata',shareVideoSizeChange);
+    video.addEventListener('resize',shareVideoSizeChange);
+    video.addEventListener('webkitendfullscreen',onNativeVideoExit);
+    // requestFullscreen ocorre DIRETAMENTE em resposta ao clique;
+    // não esperar outras promises antes para não perder a ativação do usuário.
+    if(typeof stage.requestFullscreen==='function'&&document.fullscreenEnabled!==false){
+      try{
+        session.mode='element';
+        await stage.requestFullscreen({navigationUI:'hide'});
+        if(fullShare!==session)return;
+        if(document.fullscreenElement===stage){
+          syncShareButton();
+          await syncShareOrientation();
+          return;
+        }
+      }catch(error){
+        console.info('[Zeon Mobile] Fullscreen do elemento indisponível:',error?.name||error);
+      }
+    }
+    if(fullShare!==session)return;
+    // Safari/iPhone: pode oferecer fullscreen nativo apenas para vídeo.
+    if(typeof video.webkitEnterFullscreen==='function'){
+      try{
+        session.mode='video';
+        video.webkitEnterFullscreen();
+        syncShareButton();
+        return;
+      }catch(error){
+        console.info('[Zeon Mobile] Fullscreen de vídeo indisponível:',error?.name||error);
+      }
+    }
+    // Último recurso: modo imersivo dentro da página (barra do navegador permanece).
+    session.mode='fallback';
+    stage.classList.add('zm-share-immersive');
+    document.body.classList.add('zm-share-immersive-active');
+    syncShareButton();
+    const desired=fullscreenVideoOrientation(video);
+    if(desired)orientationHint(session,desired);
+  }
+  function toggleShareFullscreen(stage){
+    if(fullShare)void exitShareFullscreen();
+    else void enterShareFullscreen(stage);
+  }
+  document.addEventListener('fullscreenchange',onFullscreenChanged);
+  document.addEventListener('webkitfullscreenchange',onFullscreenChanged);
+  document.addEventListener('click',event=>{
+    if(!mq.matches)return;
+    const button=event.target.closest?.('.call-broadcast .broadcast-focus-toggle[data-action="focus"]');
+    if(!button)return;
+    // Interrompe o antigo "modo foco" do desktop, exclusivo da área da chamada.
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    toggleShareFullscreen(button.closest('.call-broadcast'));
+  },true);
   // Nunca reconstrua os vídeos para redimensionar o grid: isso preserva
   // as trilhas LiveKit, a câmera ligada e o indicador de quem está falando.
   let callTileFrame=0;
@@ -407,6 +586,7 @@
     });
     error.hidden=!UI.notice;error.textContent=UI.notice;
     adaptMediaButtons();
+    syncShareButton();
     scheduleCallTiles();
     if(UI.mode==='home')draw(s);
   }
@@ -466,6 +646,12 @@
   },true);
   document.addEventListener('keydown',event=>{
     if(event.key!=='Escape'||!mq.matches||!available())return;
+    if(fullShare){
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      void exitShareFullscreen();
+      return;
+    }
     if(UI.mode==='channel'){event.preventDefault();setTab(UI.tab);}
   });
   document.addEventListener('zeon:web-render',schedule);
