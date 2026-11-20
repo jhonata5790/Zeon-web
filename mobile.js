@@ -313,7 +313,7 @@
     if(!button)return;
     const active=!!(fullShare&&fullShare.stage===button.closest('.call-broadcast'));
     const mode=active?'exit':'enter';
-    if(button.dataset.zmFullscreenUi===mode)return;
+    if(button.dataset.zmFullscreenUi===mode&&(!active||button.textContent==='×'))return;
     if(!shareIcons.has(button))shareIcons.set(button,button.innerHTML);
     button.dataset.zmFullscreenUi=mode;
     button.title=active?'Sair da tela cheia':'Assistir em tela cheia';
@@ -351,10 +351,16 @@
   }
   async function syncShareOrientation(){
     const session=fullShare;
-    if(!session||session.mode!=='element')return;
+    if(!session)return;
     const desired=fullscreenVideoOrientation(session.video);
     if(!desired||desired===session.requestedOrientation)return;
     session.requestedOrientation=desired;
+    session.stage.dataset.zmStreamOrientation=desired;
+    if(session.mode==='fallback'){
+      orientationHint(session,desired);
+      return;
+    }
+    if(session.mode!=='element')return;
     const orientation=window.screen?.orientation;
     if(typeof orientation?.lock!=='function'){
       orientationHint(session,desired);
@@ -365,6 +371,8 @@
       if(fullShare===session){
         session.locked=true;
         clearOrientationHint(session);
+      }else{
+        try{orientation.unlock?.();}catch{}
       }
     }catch(error){
       // Bloqueio de orientação depende do navegador, permissões e SO.
@@ -385,6 +393,7 @@
     session.video?.removeEventListener('resize',shareVideoSizeChange);
     session.video?.removeEventListener('webkitendfullscreen',onNativeVideoExit);
     session.stage.classList.remove('zm-share-immersive');
+    delete session.stage.dataset.zmStreamOrientation;
     document.body.classList.remove('zm-share-immersive-active');
     clearOrientationHint(session);
     if(session.locked){
@@ -458,8 +467,7 @@
     stage.classList.add('zm-share-immersive');
     document.body.classList.add('zm-share-immersive-active');
     syncShareButton();
-    const desired=fullscreenVideoOrientation(video);
-    if(desired)orientationHint(session,desired);
+    void syncShareOrientation();
   }
   function toggleShareFullscreen(stage){
     if(fullShare)void exitShareFullscreen();
@@ -668,7 +676,7 @@
   // Chamadas podem re-renderizar controles sem disparar o evento geral de interface.
   const stage=$('#workspace'),dock=$('#callDock');
   if(stage){
-    new MutationObserver(()=>{adaptMediaButtons();scheduleCallTiles();})
+    new MutationObserver(()=>{adaptMediaButtons();syncShareButton();scheduleCallTiles();})
       .observe(stage,{childList:true,subtree:true});
     if(window.ResizeObserver)new ResizeObserver(scheduleCallTiles).observe(stage);
   }
