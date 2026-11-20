@@ -43,3 +43,25 @@ jobs:
           name: zeon-mobile-dm-screenshots
           path: artifacts/mobile-dm/
           if-no-files-found: ignore
+
+  mobile-duo-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar navegadores de teste
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps chromium webkit
+      - name: Validar chamada com duas pessoas no celular
+        run: node tests/mobile-duo-browser.cjs
+      - name: Capturas do modo destaque e da rotação
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zeon-mobile-duo-screenshots
+          path: artifacts/mobile-duo/
+          if-no-files-found: ignore
