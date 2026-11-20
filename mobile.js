@@ -297,6 +297,39 @@
       button.setAttribute('aria-label','Transmissão de tela indisponível neste navegador');
     });
   }
+  // Nunca reconstrua os vídeos para redimensionar o grid: isso preserva
+  // as trilhas LiveKit, a câmera ligada e o indicador de quem está falando.
+  let callTileFrame=0;
+  function adjustCallTiles(){
+    if(!mq.matches)return;
+    const grid=$('#workspace.voice-workspace .call-layout:not(.is-sharing) .call-participants');
+    if(!grid)return;
+    const count=grid.querySelectorAll(':scope > .call-person-card, :scope > .call-empty-card').length;
+    if(!count)return;
+    const width=grid.clientWidth,height=grid.clientHeight;
+    if(width<=0||height<=0)return;
+    const columns=count===1?1:2,rows=Math.ceil(count/columns);
+    const landscape=window.matchMedia('(orientation: landscape)').matches;
+    const ratio=landscape?16/10:4/5; // largura / altura
+    const gap=landscape?8:10;
+    const maxByWidth=Math.max(70,(width-10-(columns-1)*gap)/columns)/ratio;
+    const maxByHeight=Math.max(72,(height-24-(rows-1)*gap)/rows);
+    const limit=count===1?(landscape?240:390):(landscape?210:290);
+    const tileHeight=Math.max(72,Math.floor(Math.min(maxByWidth,maxByHeight,limit)));
+    const tileWidth=Math.floor(tileHeight*ratio);
+    grid.classList.toggle('zm-call-single',count===1);
+    grid.classList.toggle('zm-call-many',count>4||rows*tileHeight+(rows-1)*gap+24>height);
+    grid.style.setProperty('--zm-call-tile-height',tileHeight+'px');
+    grid.style.setProperty('--zm-call-tile-width',tileWidth+'px');
+    grid.style.setProperty('--zm-call-tile-ratio',landscape?'16 / 10':'4 / 5');
+  }
+  function scheduleCallTiles(){
+    if(callTileFrame)return;
+    callTileFrame=requestAnimationFrame(()=>{
+      callTileFrame=0;
+      adjustCallTiles();
+    });
+  }
   function render(){
     pending=false;syncBackButton();
     const s=state(),visible=available();
@@ -315,6 +348,7 @@
     });
     error.hidden=!UI.notice;error.textContent=UI.notice;
     adaptMediaButtons();
+    scheduleCallTiles();
     if(UI.mode==='home')draw(s);
   }
   function schedule(){
@@ -345,7 +379,7 @@
     requestAnimationFrame(updateViewport);
   });
   window.visualViewport?.addEventListener('resize',updateViewport);
-  window.addEventListener('resize',()=>{updateViewport();schedule();});
+  window.addEventListener('resize',()=>{updateViewport();schedule();scheduleCallTiles();});
 
   root.addEventListener('click',event=>{
     const tab=event.target.closest('[data-mobile-tab]');
@@ -378,7 +412,11 @@
   if(gate)new MutationObserver(schedule).observe(gate,{attributes:true,attributeFilter:['hidden']});
   // Chamadas podem re-renderizar controles sem disparar o evento geral de interface.
   const stage=$('#workspace'),dock=$('#callDock');
-  if(stage)new MutationObserver(adaptMediaButtons).observe(stage,{childList:true,subtree:true});
+  if(stage){
+    new MutationObserver(()=>{adaptMediaButtons();scheduleCallTiles();})
+      .observe(stage,{childList:true,subtree:true});
+    if(window.ResizeObserver)new ResizeObserver(scheduleCallTiles).observe(stage);
+  }
   if(dock)new MutationObserver(()=>{adaptMediaButtons();schedule();}).observe(dock,{childList:true,subtree:true});
-  updateViewport();schedule();
+  updateViewport();schedule();scheduleCallTiles();
 })();
