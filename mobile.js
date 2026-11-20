@@ -306,6 +306,8 @@
     return document.querySelector('.call-broadcast .broadcast-focus-toggle');
   }
   function syncShareButton(){
+    // O desktop é controlado por unified.js. Não alterar rótulos/ícones no PC.
+    if(!mq.matches)return;
     if(fullShare&&(!fullShare.stage.isConnected||!document.querySelector('#callSharedScreen'))){
       resetShareFullscreen();
     }
