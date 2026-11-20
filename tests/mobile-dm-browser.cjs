@@ -33,30 +33,6 @@ async function mobile(engine,label,width,height){
   await page.locator('.zm-item-name',{hasText:'Júlia'}).waitFor({state:'visible'});
   assert.deepEqual(await page.locator('.zm-item-name').allTextContents(),['Júlia','geral','criação']);
   await page.screenshot({path:path.join(out,label+'-conversas.png'),fullPage:true});
-  await page.locator('.zm-item',{hasText:'Júlia'}).click();
-  await page.locator('#dmMessages').waitFor({state:'visible'});
-  assert.match(await page.locator('#dmMessages').innerText(),/Oi, vamos testar o Zeon/);
-  await page.locator('#dmComposerInput').fill('DM no navegador mobile');
-  await page.locator('#dmComposeForm button[type="submit"]').click();
-  await page.getByText('DM no navegador mobile').waitFor();
-  assert.equal((await page.evaluate(()=>window.__sentDms)).length,1);
-  await page.screenshot({path:path.join(out,label+'-privado.png'),fullPage:true});
-  await page.locator('#sidebarToggle').click();
-  await page.locator('.zm-home').waitFor({state:'visible'});
-  await page.locator('[data-mobile-tab="groups"]').click();
-  await page.locator('#zmTitle').getByText('Grupos').waitFor();
-  await page.locator('.zm-item',{hasText:'Mesa de RPG'}).click();
-  await page.locator('.zm-item-name',{hasText:'sistema'}).waitFor();
-  await page.screenshot({path:path.join(out,label+'-grupos.png'),fullPage:true});
-  await page.locator('[data-mobile-tab="chats"]').click();
-  await page.locator('.zm-item-name',{hasText:'Júlia'}).waitFor();
-  if(label==='android-390'){
-   await page.setViewportSize({width:1500,height:700});
-   assert.equal(await page.locator('#zeon-mobile-root').evaluate(n=>n.hidden),false);
-   assert.equal(await page.locator('.zm-bottom-nav').evaluate(n=>getComputedStyle(n).display),'grid');
-   await page.screenshot({path:path.join(out,'android-rotacao.png'),fullPage:true});
-   await page.setViewportSize({width,height});
-  }
   // Geometria real no navegador: dois cards nunca ficam alongados.
   await page.locator('[data-mobile-tab="groups"]').click();
   await page.locator('.zm-item',{hasText:'Ressonância'}).click();
@@ -94,6 +70,36 @@ async function mobile(engine,label,width,height){
    await page.setViewportSize({width,height});
    await page.waitForTimeout(80);
    await assertCallGeometry('portrait');
+  }
+  // Continuamos a validar as DMs depois de testar o grid, sem reabrir a página.
+  await page.locator('[data-mobile-tab="chats"]').click();
+  await page.locator('.zm-item-name',{hasText:'Júlia'}).waitFor({state:'visible'});
+  await page.locator('.zm-item',{hasText:'Júlia'}).click();
+  await page.locator('#dmMessages').waitFor({state:'visible'});
+  assert.match(await page.locator('#dmMessages').innerText(),/Oi, vamos testar o Zeon/);
+  // Permite finalizar a marcação de leitura antes de enviar (evita corrida com a atualização).
+  await page.waitForTimeout(150);
+  await page.locator('#dmComposerInput').fill('DM no navegador mobile');
+  await page.locator('#dmComposeForm button[type="submit"]').click();
+  await page.waitForFunction(()=>window.__sentDms.length===1,{timeout:10000});
+  await page.locator('#dmMessages').getByText('DM no navegador mobile').waitFor({timeout:10000});
+  assert.equal((await page.evaluate(()=>window.__sentDms)).length,1);
+  await page.screenshot({path:path.join(out,label+'-privado.png'),fullPage:true});
+  await page.locator('#sidebarToggle').click();
+  await page.locator('.zm-home').waitFor({state:'visible'});
+  await page.locator('[data-mobile-tab="groups"]').click();
+  await page.locator('#zmTitle').getByText('Grupos').waitFor();
+  await page.locator('.zm-item',{hasText:'Mesa de RPG'}).click();
+  await page.locator('.zm-item-name',{hasText:'sistema'}).waitFor();
+  await page.screenshot({path:path.join(out,label+'-grupos.png'),fullPage:true});
+  await page.locator('[data-mobile-tab="chats"]').click();
+  await page.locator('.zm-item-name',{hasText:'Júlia'}).waitFor();
+  if(label==='android-390'){
+   await page.setViewportSize({width:1500,height:700});
+   assert.equal(await page.locator('#zeon-mobile-root').evaluate(n=>n.hidden),false);
+   assert.equal(await page.locator('.zm-bottom-nav').evaluate(n=>getComputedStyle(n).display),'grid');
+   await page.screenshot({path:path.join(out,'android-rotacao.png'),fullPage:true});
+   await page.setViewportSize({width,height});
   }
   const bounds=await page.evaluate(()=>{
    const n=document.documentElement,b=document.querySelector('.zm-bottom-nav').getBoundingClientRect();
