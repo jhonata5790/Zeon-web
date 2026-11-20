@@ -27,8 +27,8 @@ function updateRoom(){
  }else{
   w.className='workspace voice-workspace';
   w.innerHTML='<div class="call-layout"><div class="call-participants">'+
-   '<article class="call-person-card" data-person="u"><div class="call-person-avatar">U</div><div class="call-person-info"><span class="call-person-name">Usuário de Teste</span></div></article>'+
-   '<article class="call-person-card" data-person="j"><div class="call-person-avatar">J</div><div class="call-person-info"><span class="call-person-name">Júlia</span></div></article></div>'+
+   '<article class="call-person-card" data-person="u" data-zm-local="true"><div class="call-person-avatar">U</div><div class="call-person-info"><span class="call-person-name">Usuário de Teste</span></div></article>'+
+   '<article class="call-person-card" data-person="j" data-zm-local="false"><div class="call-person-avatar">J</div><div class="call-person-info"><span class="call-person-name">Júlia</span></div></article></div>'+
    '<div class="voice-controls"><button class="voice-control" data-action="mic">Microfone</button>'+
    '<button class="voice-control" data-action="camera">Câmera</button>'+
    '<button class="voice-control" data-action="share">Transmitir</button></div></div>';
