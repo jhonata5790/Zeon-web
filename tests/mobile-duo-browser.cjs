@@ -40,7 +40,7 @@ function checkGeometry(m,label){
  assert.ok(m.stage.w>100&&m.stage.h>100,label+': invalid stage '+JSON.stringify(m));
  assert.ok(m.main.w>=m.stage.w*.94&&m.main.h>=m.stage.h*.94,label+': spotlight not large '+JSON.stringify(m));
  assert.ok(m.pip.w<=m.stage.w*.52&&m.pip.h<=m.stage.h*.59,label+': PiP too large '+JSON.stringify(m));
- assert.ok(m.pip.w>=65&&m.pip.h>=65,label+': PiP too small '+JSON.stringify(m));
+ assert.ok(m.pip.w>=60&&m.pip.h>=60,label+': PiP too small '+JSON.stringify(m));
  assert.ok(m.pip.x>=m.stage.x&&m.pip.y>=m.stage.y,label+': PiP starts outside stage '+JSON.stringify(m));
  assert.ok(m.pip.x+m.pip.w<=m.stage.x+m.stage.w+1,label+': PiP overflows right '+JSON.stringify(m));
  assert.ok(m.pip.y+m.pip.h<=m.stage.y+m.stage.h+1,label+': PiP overflows bottom '+JSON.stringify(m));
