@@ -309,8 +309,19 @@
   }
   function adjustCallTiles(){
     if(!mq.matches)return;
-    const grid=$('#workspace.voice-workspace .call-layout:not(.is-sharing) .call-participants');
+    const layout=$('#workspace.voice-workspace .call-layout');
+    if(!layout)return;
+    const grid=layout.querySelector('.call-participants');
     if(!grid)return;
+    if(layout.classList.contains('is-sharing')){
+      grid.classList.remove('zm-call-duo');
+      grid.querySelectorAll('.call-person-card').forEach(card=>{
+        card.classList.remove('zm-call-main','zm-call-pip');
+        card.removeAttribute('tabindex');card.removeAttribute('role');
+        card.removeAttribute('aria-label');card.removeAttribute('title');
+      });
+      return;
+    }
     const count=grid.querySelectorAll(':scope > .call-person-card, :scope > .call-empty-card').length;
     if(!count)return;
     const width=grid.clientWidth,height=grid.clientHeight;
