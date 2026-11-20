@@ -355,7 +355,7 @@
       }
       const aspect=landscape?1.30:0.75;
       const desiredWidth=landscape
-        ?Math.min(width*.26,height*.68*aspect,220)
+        ?Math.min(width*.26,height*.59*aspect,220)
         :Math.min(width*.35,height*.42*aspect,180);
       const pipWidth=Math.max(78,Math.floor(desiredWidth));
       grid.style.setProperty('--zm-duo-pip-width',pipWidth+'px');
