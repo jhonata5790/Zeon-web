@@ -594,3 +594,90 @@
 .call-layout.share-focused .broadcast-label{bottom:12px;max-width:calc(100% - 24px)}
 @media(hover:none){.call-layout.share-focused .voice-controls{opacity:1;pointer-events:auto}}
 @media(prefers-reduced-motion:reduce){.call-broadcast .broadcast-focus-toggle,.call-layout.share-focused .voice-controls{transition:none}}
+
+
+/* Zeon PC — tela cheia REAL da transmissão.
+ * O workspace é o elemento fullscreen: mantém a tela cheia ao receber atualizações
+ * de participantes/vídeos. O compartilhamento é mostrado inteiro, sem distorção.
+ * No mobile, o fullscreen continua sendo gerenciado por mobile.css/mobile.js. */
+#workspace.voice-workspace:fullscreen{
+  position:relative!important;
+  display:block!important;
+  box-sizing:border-box!important;
+  width:100vw!important;
+  height:100vh!important;
+  max-width:none!important;
+  max-height:none!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  background:#000!important;
+  overflow:hidden!important;
+}
+#workspace.voice-workspace:fullscreen::backdrop{background:#000}
+#workspace.voice-workspace:fullscreen .call-layout.is-sharing{
+  position:absolute!important;
+  inset:0!important;
+  display:block!important;
+  box-sizing:border-box!important;
+  width:100%!important;
+  height:100%!important;
+  max-height:none!important;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+  overflow:hidden!important;
+}
+#workspace.voice-workspace:fullscreen .call-broadcast{
+  position:absolute!important;
+  inset:0!important;
+  box-sizing:border-box!important;
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  min-width:0!important;
+  min-height:0!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  background:#000!important;
+  overflow:hidden!important;
+}
+#workspace.voice-workspace:fullscreen .call-broadcast-video{
+  position:absolute!important;
+  inset:0!important;
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  object-fit:contain!important;
+  background:#000!important;
+}
+#workspace.voice-workspace:fullscreen .call-participants,
+#workspace.voice-workspace:fullscreen .voice-controls{
+  display:none!important;
+}
+#workspace.voice-workspace:fullscreen .broadcast-focus-toggle{
+  position:absolute!important;
+  top:16px!important;
+  right:16px!important;
+  z-index:10!important;
+  display:grid!important;
+  width:44px!important;
+  height:44px!important;
+  border-radius:13px!important;
+  background:#13101bdc!important;
+  border:1px solid #ffffff73!important;
+  color:#fff!important;
+}
+#workspace.voice-workspace:fullscreen .broadcast-label{
+  position:absolute!important;
+  left:16px!important;
+  bottom:16px!important;
+  z-index:5!important;
+  max-width:calc(100% - 32px)!important;
+}
