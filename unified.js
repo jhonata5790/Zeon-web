@@ -39,6 +39,7 @@ function authGate(stage){
  const gate=$('#authGate');gate.hidden=stage==='ready';
  $('#setupScreen').hidden=stage!=='setup';$('#loginScreen').hidden=stage!=='login';$('#loadingScreen').hidden=stage!=='loading';
  $('.app-shell').classList.toggle('auth-locked',stage!=='ready');
+ document.dispatchEvent(new CustomEvent('zeon:web-auth'));
 }
 async function showAuth(){clearInterval(S.poll);DM?.reset();authGate('loading');S.status=await api('status');
  if(!S.status.configured){authGate('setup');setConnection('CONFIGURAR ONLINE');return;}
@@ -82,8 +83,12 @@ function renderHeader(){if(DM?.active()){DM.renderHeader();return;}const c=chann
  $('.app-shell').classList.toggle('call-chat-open',!!(canChat&&S.chatOpen));
  $('#inviteButton').hidden=!S.group;$('#inviteButton').textContent='✉ Convidar';
 }
-function render(){renderGroups();renderChannels();renderHeader();renderWorkspace();renderDock();renderCallChat();syncFloat();}
-function renderWorkspace(){if(DM?.active()){detach();DM.renderWorkspace();return;}const c=channel(),root=$('#workspace');
+function render(){renderGroups();renderChannels();renderHeader();renderWorkspace();renderDock();renderCallChat();syncFloat();
+ document.dispatchEvent(new CustomEvent('zeon:web-render'));
+}
+function renderWorkspace(){
+ exitDesktopShareFullscreenIfInactive();
+ if(DM?.active()){detach();DM.renderWorkspace();return;}const c=channel(),root=$('#workspace');
  // Não destrua vídeos enquanto a mesma chamada estiver visível. Recriar o <video>
  // por causa de um evento de voz causava tela preta/piscadas durante a transmissão.
  if(!c||c.type==='text'){
@@ -108,6 +113,60 @@ function attachInto(track,node){if(!track||!node)return;try{track.attach(node);n
 // estrutura mesmo quando seu identificador textual for reaproveitado.
 const voiceTrackIds=new WeakMap();let voiceTrackNumber=0;
 function voiceTrackKey(track){if(!track)return '-';if(!voiceTrackIds.has(track))voiceTrackIds.set(track,++voiceTrackNumber);return voiceTrackIds.get(track);}
+// No computador, o workspace (não o vídeo) entra na Fullscreen API.
+// Assim o elemento fullscreen sobrevive a atualizações de câmera/participantes.
+const desktopShareIsTouch=()=>!!window.matchMedia?.('(pointer: coarse) and (hover: none)')?.matches;
+function desktopShareRoot(){
+ const root=$('#workspace');
+ return root?.classList.contains('voice-workspace')?root:null;
+}
+function syncDesktopShareFullscreenButton(){
+ if(desktopShareIsTouch())return; // mobile.js tem seu próprio controle
+ const root=desktopShareRoot(),button=root?.querySelector('.call-broadcast .broadcast-focus-toggle');
+ if(!button)return;
+ const full=document.fullscreenElement===root;
+ const mode=full?'fullscreen':S.focus?'focus':'normal';
+ const label=full?'Sair da tela cheia':S.focus?'Restaurar participantes':'Colocar transmissão em tela cheia';
+ button.title=label;
+ button.setAttribute('aria-label',label);
+ button.setAttribute('aria-pressed',String(full||!!S.focus));
+ if(button.dataset.desktopShareMode!==mode){
+  button.dataset.desktopShareMode=mode;
+  button.innerHTML=icon(full||S.focus?'shrink':'expand');
+ }
+}
+function exitDesktopShareFullscreenIfInactive(){
+ const root=$('#workspace');
+ if(document.fullscreenElement!==root)return;
+ if(!DM?.active()&&S.room&&stageSource()&&channel()?.type==='voice')return;
+ try{const pending=document.exitFullscreen?.();pending?.catch?.(()=>{});}catch{}
+}
+async function toggleDesktopShareFullscreen(){
+ const root=desktopShareRoot();
+ if(!root?.querySelector('.call-broadcast')||!stageSource())return;
+ if(document.fullscreenElement===root){
+  try{await document.exitFullscreen();}catch(err){console.info('[Zeon] Não foi possível sair da tela cheia:',err?.name||err);}
+  syncDesktopShareFullscreenButton();
+  return;
+ }
+ // Chamado diretamente no clique: a API exige ativação do usuário.
+ if(typeof root.requestFullscreen==='function'&&document.fullscreenEnabled!==false){
+  try{
+   await root.requestFullscreen({navigationUI:'hide'});
+   if(document.fullscreenElement===root){
+    S.focus=false;
+    refreshVoiceChrome(participants(),stageSource(),false,true);
+    syncFloat();
+    return;
+   }
+  }catch(err){console.info('[Zeon] Fullscreen do PC indisponível:',err?.name||err);}
+ }
+ // Compatibilidade: browsers que bloqueiam a API ainda têm o modo foco.
+ S.focus=!S.focus;
+ renderWorkspace();syncFloat();
+ popup('Este navegador bloqueou a tela cheia. Usando o modo de destaque.');
+}
+document.addEventListener('fullscreenchange',syncDesktopShareFullscreenButton);
 function refreshVoiceChrome(people,share,focus,joined){
  const root=$('#workspace'),layout=root.querySelector('.call-layout');if(!layout)return;
  layout.classList.toggle('share-focused',focus);
@@ -120,7 +179,7 @@ function refreshVoiceChrome(people,share,focus,joined){
   b.classList.toggle('active',enabled);b.disabled=!joined;
   if(b.dataset.state!==String(enabled)){b.dataset.state=String(enabled);b.innerHTML=icon(type==='mic'&&!enabled?'microphone-off':type==='camera'&&!enabled?'camera-off':glyph);}
  }
- const focusButton=root.querySelector('[data-action="focus"]');if(focusButton){const label=focus?'Restaurar participantes':'Maximizar transmissão';focusButton.title=label;focusButton.setAttribute('aria-label',label);if(focusButton.dataset.state!==String(focus)){focusButton.dataset.state=String(focus);focusButton.innerHTML=icon(focus?'shrink':'expand');}}
+ syncDesktopShareFullscreenButton();
 }
 function renderVoice(c){const root=$('#workspace');root.className='workspace voice-workspace';const joined=S.joinedVoice===c.id&&!!S.room;
  const people=joined?participants():[],share=joined?stageSource():null,focus=!!(share&&S.focus);
@@ -132,7 +191,7 @@ function renderVoice(c){const root=$('#workspace');root.className='workspace voi
   refreshVoiceChrome(people,share,focus,joined);return;
  }
  const participantHtml=people.length?people.map((p,i)=>{const track=sourceTrack(p,'Camera'),label=personLabel(p),key=escape(p.identity||String(i));
- return `<article class="call-person-card" data-person="${key}">${track?`<video class="call-person-video ${p===S.room.localParticipant&&prefs.cameraMirror?'self-mirror':''}" data-camera="${key}" autoplay muted playsinline></video>`:`<div class="call-person-avatar">${escape(initials(label))}</div>`}<div class="call-person-info"><span class="call-person-name">${escape(label)}</span>${p===S.room.localParticipant?'':`<button type="button" class="person-volume-button" data-action="person-volume" data-id="${key}" title="Ajustar volume de ${escape(label)} somente para você" aria-label="Volume de ${escape(label)}">${icon('speaker')}</button>`}</div></article>`;}).join(''):
+ return `<article class="call-person-card" data-person="${key}" data-zm-local="${p===S.room.localParticipant?'true':'false'}">${track?`<video class="call-person-video ${p===S.room.localParticipant&&prefs.cameraMirror?'self-mirror':''}" data-camera="${key}" autoplay muted playsinline></video>`:`<div class="call-person-avatar">${escape(initials(label))}</div>`}<div class="call-person-info"><span class="call-person-name">${escape(label)}</span>${p===S.room.localParticipant?'':`<button type="button" class="person-volume-button" data-action="person-volume" data-id="${key}" title="Ajustar volume de ${escape(label)} somente para você" aria-label="Volume de ${escape(label)}">${icon('speaker')}</button>`}</div></article>`;}).join(''):
  '<div class="call-empty-card"><span>Conectando ao canal de voz…</span></div>';
  // Desanexar ANTES de substituir o DOM, para não abandonar elementos de vídeo antigos.
  detach();root.dataset.voiceSignature=signature;
@@ -410,7 +469,10 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');
  if(a==='start-capture')void task(startShare);if(a==='close-capture')$('#capturePicker').close();
  if(a==='mic'||a==='camera'||a==='share')void task(()=>setMedia(a));
  if(a==='leave')void task(leaveVoice);if(a==='floating')openFloating();
- if(a==='focus'&&stageSource()){S.focus=!S.focus;renderWorkspace();syncFloat();}
+ if(a==='focus'&&stageSource()){
+  if(desktopShareIsTouch())return; // mobile.js intercepta na captura
+  void toggleDesktopShareFullscreen();
+ }
  if(a==='invite-message'&&group()){void task(async()=>{try{await navigator.clipboard.writeText(group().invite_code);popup('Convite copiado.');}catch{popup('Código do convite: '+group().invite_code);}});}
 });
 $('#cancelModal').onclick=()=>$('#modal').close();
@@ -502,6 +564,27 @@ async function initConsivoDebug(){
 void initConsivoDebug();
 
 window.addEventListener('beforeunload',()=>{clearInterval(S.poll);stopPeer();stopMicTest();void leaveVoice();});
+// Adaptador Web Mobile, sem substituir a lógica de mensagens privadas ou canais.
+window.ZeonMobileAdapter=Object.freeze({
+ snapshot:()=>({
+  ready:!!S.status?.loggedIn,
+  groupId:S.group,channelId:S.channel,role:S.role,
+  groups:S.groups.map(g=>({id:g.id,name:g.name})),
+  channels:S.channels.map(c=>({id:c.id,name:c.name,type:c.type,adminOnly:!!c.admin_only})),
+  groupName:group()?.name||'',
+  joinedVoiceId:S.joinedVoice,joinedVoiceName:joinedChannel()?.name||'',
+  inCall:!!S.room,displayName:displayName(),dmActive:!!DM?.active()
+ }),
+ selectGroup:id=>selectGroup(id),
+ selectChannel:id=>selectChannel(id),
+ newGroup:()=>openModal('group'),
+ joinGroup:()=>openModal('join'),
+ newChannel:type=>openModal(type==='voice'?'channel-voice':'channel-text'),
+ invite:()=>$('#inviteButton').click(),
+ settings:()=>openSettings(),
+ signOut:()=>$('#signOutBtn').click(),
+ leaveVoice:()=>leaveVoice()
+});
 DM?.configure({api,render,notify:popup,userId:()=>S.status?.userId||null,sidebarOpen:()=>S.sidebarOpen});
 $('#remoteAudio').replaceChildren();authGate('loading');void showAuth().catch(err=>{authGate('login');setConnection('FALHA DE CONEXÃO');popup('Não foi possível carregar a conta: '+(err?.message||'erro de rede'));});
 })();

@@ -30,6 +30,7 @@
       threads=data.threads||[];profiles=new Map((data.profiles||[]).map(p=>[p.id,p]));
       reads=new Map((data.reads||[]).map(r=>[r.thread_id,r.seen_at]));
       setDmRail();if(active){renderSidebar();renderHeader();}
+      document.dispatchEvent(new CustomEvent('zeon:dm-update'));
     } finally{inboxBusy=false;}
   }
   async function loadMessages(){if(!selected||messagesBusy)return;const id=selected;messagesBusy=true;
@@ -66,10 +67,12 @@
     root.innerHTML=messages.length?messages.map(m=>{const self=m.author_id===me();return `<div class="dm-bubble-row ${self?'mine':'theirs'}"><div class="dm-bubble"><div>${esc(m.body)}</div><time>${esc(time(m.created_at))}</time></div></div>`;}).join(''):'<div class="chat-empty"><strong>Nenhuma mensagem ainda</strong><p>Escreva algo para começar esta conversa privada.</p></div>';
     if(bottom||messages.length<4)root.scrollTop=root.scrollHeight;
   }
-  async function openThread(id){if(!threads.some(t=>t.id===id))throw Error('Conversa não encontrada.');active=true;selected=id;messages=[];draft='';lastRenderedThread='';setDmRail();render();await loadMessages();}
+  async function openThread(id){if(!threads.some(t=>t.id===id))throw Error('Conversa não encontrada.');active=true;selected=id;messages=[];draft='';lastRenderedThread='';setDmRail();
+    document.dispatchEvent(new CustomEvent('zeon:dm-open'));render();await loadMessages();}
   async function startWith(userId){if(busy)return;busy=true;
     try{const t=await api('dmCreate',{userId});await inbox();if(!threads.some(x=>x.id===t.id))threads.unshift({...t,last_message_at:null,last_message_preview:null});
-      $('#dmSearchDialog')?.close();active=true;selected=t.id;messages=[];draft='';lastRenderedThread='';render();await loadMessages();
+      $('#dmSearchDialog')?.close();active=true;selected=t.id;messages=[];draft='';lastRenderedThread='';
+      document.dispatchEvent(new CustomEvent('zeon:dm-open'));render();await loadMessages();
     }finally{busy=false;}
   }
   function showSearch(){createSearch();$('#dmSearchDialog').showModal();$('#dmSearchInput').focus();}
@@ -96,5 +99,12 @@
     }
   });
   async function task(fn){try{await fn();}catch(e){notify(e?.message||'Não foi possível acessar as mensagens privadas.');console.error('[Zeon DM]',e);}}
-  window.ZeonDM={configure,reset,leave,active:()=>active,enter,tick,renderSidebar,renderHeader,renderWorkspace,openByUserId:id=>task(()=>startWith(id))};
+  // Lista pública para a aba Conversas; nenhum acesso direto ao backend extra.
+  function snapshot(){return {active,selected,threads:threads.map(t=>({
+    id:t.id,name:peerName(t),handle:peer(t).handle||'',
+    preview:t.last_message_preview||'',unread:unread(t)
+  }))};}
+  window.ZeonDM={configure,reset,leave,active:()=>active,enter,tick,
+    snapshot,openThread,showSearch,renderSidebar,renderHeader,renderWorkspace,
+    openByUserId:id=>task(()=>startWith(id))};
 })();

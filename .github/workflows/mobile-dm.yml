@@ -1,0 +1,71 @@
+name: Zeon Web — Mobile, Desktop e Mensagens Privadas
+on:
+  push:
+    branches:
+      - feature/mobile-com-dm-v2
+  pull_request:
+    branches:
+      - main
+permissions:
+  contents: read
+jobs:
+  mobile-dm:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar ambiente DOM isolado
+        run: npm install --no-save --package-lock=false --ignore-scripts jsdom@26.1.0
+      - name: Validar mobile, DMs e compatibilidade
+        run: node --test tests/mobile-dm.test.cjs
+
+  mobile-dm-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Chromium e WebKit
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps chromium webkit
+      - name: Testar DMs em navegadores mobile
+        run: node tests/mobile-dm-browser.cjs
+      - name: Salvar capturas para revisão
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zeon-mobile-dm-screenshots
+          path: artifacts/mobile-dm/
+          if-no-files-found: ignore
+
+  mobile-duo-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar navegadores de teste
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps chromium webkit
+      - name: Validar chamada com duas pessoas no celular
+        run: node tests/mobile-duo-browser.cjs
+      - name: Validar tela cheia e orientação da transmissão
+        run: node tests/mobile-share-fullscreen.cjs
+      - name: Validar tela cheia real no PC
+        run: node tests/desktop-share-fullscreen.cjs
+      - name: Capturas do modo destaque e da rotação
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zeon-mobile-duo-screenshots
+          path: artifacts/mobile-duo/
+          if-no-files-found: ignore
