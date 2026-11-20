@@ -58,6 +58,8 @@ jobs:
           npx playwright install --with-deps chromium webkit
       - name: Validar chamada com duas pessoas no celular
         run: node tests/mobile-duo-browser.cjs
+      - name: Validar tela cheia e orientação da transmissão
+        run: node tests/mobile-share-fullscreen.cjs
       - name: Capturas do modo destaque e da rotação
         if: always()
         uses: actions/upload-artifact@v4
