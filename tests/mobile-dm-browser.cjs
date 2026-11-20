@@ -35,7 +35,7 @@ async function mobile(engine,label,width,height){
   await page.screenshot({path:path.join(out,label+'-conversas.png'),fullPage:true});
   // Geometria real no navegador: dois cards nunca ficam alongados.
   await page.locator('[data-mobile-tab="groups"]').click();
-  await page.locator('.zm-item',{hasText:'Ressonância'}).click();
+  await page.locator('.zm-item[aria-label="Ressonância"]').click();
   await page.locator('[data-mobile-tab="calls"]').click();
   await page.locator('.zm-item',{hasText:'Sala de voz'}).click();
   await page.locator('.call-person-card').first().waitFor({state:'visible'});
