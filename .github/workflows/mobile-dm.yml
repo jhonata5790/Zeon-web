@@ -1,4 +1,4 @@
-name: Zeon Mobile + Mensagens Privadas
+name: Zeon Web — Mobile, Desktop e Mensagens Privadas
 on:
   push:
     branches:
@@ -60,6 +60,8 @@ jobs:
         run: node tests/mobile-duo-browser.cjs
       - name: Validar tela cheia e orientação da transmissão
         run: node tests/mobile-share-fullscreen.cjs
+      - name: Validar tela cheia real no PC
+        run: node tests/desktop-share-fullscreen.cjs
       - name: Capturas do modo destaque e da rotação
         if: always()
         uses: actions/upload-artifact@v4
