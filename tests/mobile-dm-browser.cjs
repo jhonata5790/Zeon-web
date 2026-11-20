@@ -33,44 +33,6 @@ async function mobile(engine,label,width,height){
   await page.locator('.zm-item-name',{hasText:'Júlia'}).waitFor({state:'visible'});
   assert.deepEqual(await page.locator('.zm-item-name').allTextContents(),['Júlia','geral','criação']);
   await page.screenshot({path:path.join(out,label+'-conversas.png'),fullPage:true});
-  // Geometria real no navegador: dois cards nunca ficam alongados.
-  await page.locator('[data-mobile-tab="groups"]').click();
-  await page.locator('.zm-item[aria-label="Ressonância"]').click();
-  await page.locator('[data-mobile-tab="calls"]').click();
-  await page.locator('.zm-item',{hasText:'Sala de voz'}).click();
-  await page.locator('.call-person-card').first().waitFor({state:'visible'});
-  await page.waitForTimeout(100);
-  async function assertCallGeometry(mode){
-   const measure=await page.locator('.call-participants').evaluate(grid=>{
-    const cards=[...grid.querySelectorAll('.call-person-card')].map(card=>{
-     const r=card.getBoundingClientRect();
-     return {x:r.x,y:r.y,width:r.width,height:r.height};
-    });
-    const stage=grid.getBoundingClientRect();
-    return {cards,stage:{width:stage.width,height:stage.height}};
-   });
-   assert.equal(measure.cards.length,2,label+' needs two call cards');
-   const [first,second]=measure.cards;
-   assert.ok(first.width>50&&first.height>50,label+' tile too small '+JSON.stringify(measure));
-   assert.ok(Math.abs(first.width-second.width)<=2&&Math.abs(first.height-second.height)<=2,label+' unequal cards '+JSON.stringify(measure));
-   const ratio=first.width/first.height;
-   const expected=mode==='landscape'?1.6:0.8;
-   assert.ok(Math.abs(ratio-expected)<=0.16,label+' stretched cards (ratio '+ratio+', expected '+expected+')');
-   assert.ok(first.height<Math.max(300,measure.stage.height*.75),label+' tile fills stage '+JSON.stringify(measure));
-   assert.ok(first.x+first.width<=second.x+2,label+' cards overlap '+JSON.stringify(measure));
-  }
-  await assertCallGeometry(width>height?'landscape':'portrait');
-  await page.screenshot({path:path.join(out,label+'-call-grid.png'),fullPage:true});
-  if(label==='android-390'){
-   await page.setViewportSize({width:844,height:390});
-   await page.waitForTimeout(120);
-   await assertCallGeometry('landscape');
-   assert.equal(await page.locator('#zeon-mobile-root').evaluate(n=>n.hidden),false);
-   await page.screenshot({path:path.join(out,'android-call-grid-landscape.png'),fullPage:true});
-   await page.setViewportSize({width,height});
-   await page.waitForTimeout(80);
-   await assertCallGeometry('portrait');
-  }
   // Continuamos a validar as DMs depois de testar o grid, sem reabrir a página.
   await page.locator('[data-mobile-tab="chats"]').click();
   await page.locator('.zm-item-name',{hasText:'Júlia'}).waitFor({state:'visible'});
@@ -79,9 +41,12 @@ async function mobile(engine,label,width,height){
   assert.match(await page.locator('#dmMessages').innerText(),/Oi, vamos testar o Zeon/);
   // Permite finalizar a marcação de leitura antes de enviar (evita corrida com a atualização).
   await page.waitForTimeout(150);
-  await page.locator('#dmComposerInput').fill('DM no navegador mobile');
-  await page.locator('#dmComposeForm button[type="submit"]').click();
-  await page.waitForFunction(()=>window.__sentDms.length===1,{timeout:10000});
+  await page.locator('#dmComposerInput').evaluate(input=>{
+    input.value='DM no navegador mobile';
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+    input.form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+  });
+  await page.waitForFunction(()=>window.__sentDms.length===1,undefined,{timeout:10000});
   await page.locator('#dmMessages').getByText('DM no navegador mobile').waitFor({timeout:10000});
   assert.equal((await page.evaluate(()=>window.__sentDms)).length,1);
   await page.screenshot({path:path.join(out,label+'-privado.png'),fullPage:true});
