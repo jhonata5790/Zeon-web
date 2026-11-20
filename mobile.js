@@ -300,6 +300,13 @@
   // Nunca reconstrua os vídeos para redimensionar o grid: isso preserva
   // as trilhas LiveKit, a câmera ligada e o indicador de quem está falando.
   let callTileFrame=0;
+  let duoFocusRoom=null;
+  let duoFocusIdentity=null;
+  function switchDuoFocus(card){
+    if(!card?.closest('.call-participants.zm-call-duo')||!card.classList.contains('zm-call-pip'))return;
+    duoFocusIdentity=card.dataset.person||null;
+    adjustCallTiles(); // altera apenas classes e estilos, sem desconectar a câmera
+  }
   function adjustCallTiles(){
     if(!mq.matches)return;
     const grid=$('#workspace.voice-workspace .call-layout:not(.is-sharing) .call-participants');
@@ -308,8 +315,49 @@
     if(!count)return;
     const width=grid.clientWidth,height=grid.clientHeight;
     if(width<=0||height<=0)return;
-    const columns=count===1?1:2,rows=Math.ceil(count/columns);
     const landscape=window.matchMedia('(orientation: landscape)').matches;
+    const room=state()?.joinedVoiceId||null;
+    if(duoFocusRoom!==room){duoFocusRoom=room;duoFocusIdentity=null;}
+    const cards=[...grid.querySelectorAll(':scope > .call-person-card')];
+    // Exatamente duas pessoas: o outro participante fica em destaque;
+    // o próprio usuário aparece numa prévia sobreposta, como numa videochamada.
+    if(count===2&&cards.length===2){
+      grid.classList.add('zm-call-duo');
+      grid.classList.remove('zm-call-single','zm-call-many');
+      const remote=cards.find(card=>card.dataset.zmLocal!=='true')||cards[0];
+      const focus=cards.find(card=>card.dataset.person===duoFocusIdentity)||remote;
+      for(const card of cards){
+        const pip=card!==focus;
+        card.classList.toggle('zm-call-main',!pip);
+        card.classList.toggle('zm-call-pip',pip);
+        if(pip){
+          card.tabIndex=0;
+          card.setAttribute('role','button');
+          card.setAttribute('aria-label','Trocar participante em destaque');
+          card.title='Toque para trocar o destaque';
+        }else{
+          card.removeAttribute('tabindex');
+          card.removeAttribute('role');
+          card.removeAttribute('aria-label');
+          card.removeAttribute('title');
+        }
+      }
+      const aspect=landscape?1.30:0.75;
+      const desiredWidth=landscape
+        ?Math.min(width*.26,height*.68*aspect,220)
+        :Math.min(width*.35,height*.42*aspect,180);
+      const pipWidth=Math.max(78,Math.floor(desiredWidth));
+      grid.style.setProperty('--zm-duo-pip-width',pipWidth+'px');
+      grid.style.setProperty('--zm-duo-pip-height',Math.floor(pipWidth/aspect)+'px');
+      return;
+    }
+    grid.classList.remove('zm-call-duo');
+    for(const card of cards){
+      card.classList.remove('zm-call-main','zm-call-pip');
+      card.removeAttribute('tabindex');card.removeAttribute('role');
+      card.removeAttribute('aria-label');card.removeAttribute('title');
+    }
+    const columns=count===1?1:2,rows=Math.ceil(count/columns);
     const ratio=landscape?16/10:4/5; // largura / altura
     const gap=landscape?8:10;
     const maxByWidth=Math.max(70,(width-10-(columns-1)*gap)/columns)/ratio;
@@ -391,6 +439,16 @@
     }
   });
   search.addEventListener('input',schedule);
+  document.addEventListener('click',event=>{
+    if(!mq.matches||event.target.closest('.person-volume-button'))return;
+    const card=event.target.closest('.call-person-card.zm-call-pip');
+    if(card)switchDuoFocus(card);
+  });
+  document.addEventListener('keydown',event=>{
+    if(!mq.matches||!['Enter',' '].includes(event.key))return;
+    const card=event.target.closest?.('.call-person-card.zm-call-pip');
+    if(card&&event.target===card){event.preventDefault();switchDuoFocus(card);}
+  });
   document.addEventListener('click',event=>{
     if(!mq.matches||!event.target.closest('#sidebarToggle'))return;
     event.preventDefault();event.stopImmediatePropagation();setTab(UI.tab);
