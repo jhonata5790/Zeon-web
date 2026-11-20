@@ -201,6 +201,79 @@
   .app-shell #workspace.voice-workspace .call-layout:not(.is-sharing) .call-person-name{
     font-size:11px;
   }
+  /* Exatamente duas pessoas, sem transmissão: vídeo principal + prévia flutuante.
+     Só entra no modo touch; nenhuma regra afeta chamadas desktop ou sharing. */
+  .app-shell #workspace.voice-workspace .call-layout:not(.is-sharing) .call-participants.zm-call-duo{
+    display:block!important;
+    position:relative;
+    isolation:isolate;
+    padding:0!important;
+    overflow:hidden!important;
+    border:1px solid #403658;
+    border-radius:19px;
+    background:radial-gradient(circle at center,#241c34 0%,#110e1b 80%);
+  }
+  .app-shell #workspace.voice-workspace .call-layout:not(.is-sharing) .call-participants.zm-call-duo > .call-person-card.zm-call-main{
+    position:absolute!important;
+    inset:0!important;
+    width:100%!important;
+    height:100%!important;
+    max-width:none!important;
+    max-height:none!important;
+    aspect-ratio:auto!important;
+    z-index:1;
+    border:0;
+    border-radius:0;
+    box-shadow:none;
+  }
+  .app-shell #workspace.voice-workspace .call-layout:not(.is-sharing) .call-participants.zm-call-duo > .call-person-card.zm-call-pip{
+    position:absolute!important;
+    inset:auto 12px 12px auto!important;
+    width:var(--zm-duo-pip-width,115px)!important;
+    height:var(--zm-duo-pip-height,155px)!important;
+    max-width:calc(100% - 24px)!important;
+    max-height:calc(100% - 24px)!important;
+    aspect-ratio:auto!important;
+    z-index:5;
+    border:2px solid #b59bf5;
+    border-radius:14px;
+    background:#161121;
+    box-shadow:0 9px 30px #000a;
+    cursor:pointer;
+    touch-action:manipulation;
+  }
+  .app-shell #workspace.voice-workspace .zm-call-duo .call-person-card.zm-call-pip:focus-visible{
+    outline:3px solid #e2d3ff;
+    outline-offset:2px;
+  }
+  .app-shell #workspace.voice-workspace .zm-call-duo .call-person-card.zm-call-main .call-person-avatar{
+    width:clamp(88px,24vw,136px);
+    height:auto;
+    font-size:clamp(36px,9vw,60px);
+  }
+  .app-shell #workspace.voice-workspace .zm-call-duo .call-person-card.zm-call-pip .call-person-avatar{
+    width:min(46%,64px);height:auto;
+    font-size:clamp(20px,5vw,32px);
+  }
+  .app-shell #workspace.voice-workspace .zm-call-duo .call-person-card.zm-call-pip .call-person-info{
+    left:5px;bottom:5px;padding:4px 6px;
+    max-width:calc(100% - 10px);
+    gap:4px;
+  }
+  .app-shell #workspace.voice-workspace .zm-call-duo .call-person-card.zm-call-pip .call-person-name{
+    font-size:10px;
+  }
+  .app-shell #workspace.voice-workspace .zm-call-duo .call-person-card.zm-call-pip .person-volume-button{
+    min-width:24px;width:24px;height:24px;padding:3px;
+  }
+  @media (orientation:landscape){
+    .app-shell #workspace.voice-workspace .zm-call-duo .call-person-card.zm-call-main .call-person-video{
+      object-fit:contain;
+    }
+    .app-shell #workspace.voice-workspace .zm-call-duo .call-person-card.zm-call-pip{
+      right:10px!important;bottom:8px!important;
+    }
+  }
   .app-shell .call-layout .voice-controls{gap:8px}
   .app-shell .call-layout .voice-control{width:47px;height:47px;border-radius:14px}
   .app-shell .call-layout .voice-control svg{width:21px;height:21px}
