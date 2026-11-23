@@ -301,7 +301,22 @@ async function joinVoice(c){if(!LK())throw Error('Instale as dependências e exe
  await leaveVoice();S.connecting=true;renderWorkspace();
  try{const ticket=await api('livekitToken',{channelId:c.id});if(!ticket?.token||!ticket?.url)throw Error('Token de chamada não retornado.');
  const lib=LK(),room=new lib.Room({adaptiveStream:true,dynacast:true});
- setupRoom(room,lib);await room.connect(ticket.url,ticket.token);
+ setupRoom(room,lib);
+ try{
+  // Signal WebSocket pode demorar mais em redes móveis; não altera P2P nem o áudio.
+  await room.connect(ticket.url,ticket.token,{maxRetries:2,websocketTimeout:20000});
+ }catch(connectError){
+  try{await room.disconnect();}catch{}
+  const text=String(connectError?.message||'');
+  const signalFailure=/websocket|signal connection|server.*unreachable|network|timed?\s*out|timeout/i.test(text);
+  if(signalFailure){
+   console.warn('[Zeon] Falha de sinalização LiveKit:',{reason:connectError?.reasonName||connectError?.reason||'desconhecido',status:connectError?.status||null});
+   const friendly=new Error('Não foi possível conectar ao servidor de chamadas (WebSocket). Tente novamente usando Wi-Fi ou outra rede. Se persistir, o endereço do LiveKit precisa ser verificado.');
+   friendly.cause=connectError;
+   throw friendly;
+  }
+  throw connectError;
+ }
  S.room=room;S.joinedVoice=c.id;S.focus=false;
  initializeP2P(room);
  try{await room.startAudio();}catch{popup('Clique no Zeon para ativar a reprodução de áudio.');}
