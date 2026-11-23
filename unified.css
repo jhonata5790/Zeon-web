@@ -46,3 +46,7 @@
 #personVolumePanel .person-volume-actions button{flex:1;background:#302744;border:1px solid #51406f;border-radius:8px;color:#f5efff;font:inherit;padding:9px 6px;cursor:pointer}
 #personVolumePanel .person-volume-actions button:hover{background:#49366e}
 #personVolumePanel small{display:block;margin-top:12px;color:#a89cb7;line-height:1.45}
+
+/* Zeon Direct Share experimental, LiveKit fallback remains. */
+.zeon-transport-toggle{font-size:11px!important;font-weight:750!important;letter-spacing:.02em;min-width:44px;}
+.zeon-transport-on{color:#eee4ff!important;border-color:#ab8bff!important;background:rgba(133,78,229,.35)!important;}
