@@ -188,9 +188,11 @@
         body:{channel_id:id,author_id:session.user.id,author_name:clean(session.user?.email?.split('@')[0]||'Participante',30),body},
         headers:{Prefer:'return=minimal'}});
     }
-    if(command==='livekitToken'){
-      const id=requireUUID(arg.channelId,'Canal');return request('/functions/v1/consivo-livekit-token',{
-        method:'POST',authorize:true,body:{channelId:id}});
+    if(command==='p2pSession'){
+      const id=requireUUID(arg.channelId,'Canal');await ensureSession();
+      const found=await request('/rest/v1/channels?select=id&type=eq.voice&id=eq.'+encodeURIComponent(id),{authorize:true});
+      if(!found?.length)throw Error('Você não tem acesso a este canal de voz.');
+      return {url:config.url,key:config.key,accessToken:session.access_token,userId:session.user.id};
     }
     if(command==='profileMine'){
       await ensureSession();const rows=await request('/rest/v1/consivo_profiles?select=*&id=eq.'+encodeURIComponent(session.user.id)+'&limit=1',{authorize:true});

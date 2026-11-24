@@ -17,66 +17,18 @@ const iconPaths={
 };
 const icon=name=>`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${iconPaths[name]||''}</svg>`;
 const PREFKEY='consivo-v06-preferences';
-const defaults={microphoneId:'',cameraId:'',speakerId:'',volume:75,sidebarOpen:true,cameraResolution:'720',cameraFps:30,cameraMirror:true,cameraFit:'cover',shareResolution:'1080',shareFps:30,shareTransport:'livekit'};
+const defaults={microphoneId:'',cameraId:'',speakerId:'',volume:75,sidebarOpen:true,cameraResolution:'720',cameraFps:30,cameraMirror:true,cameraFit:'cover',shareResolution:'1080',shareFps:30,shareTransport:'direct'};
 let prefs={...defaults};try{prefs={...prefs,...JSON.parse(localStorage.getItem(PREFKEY)||'{}')};}catch{}
 const compat=window.ConsivoMediaCompat,qual=window.ConsivoCameraQuality,shareQual=window.ConsivoShareQuality;
 Object.assign(prefs,qual?.normalize(prefs)||{},shareQual?.normalizeShareSettings(prefs)||{});
 const savePrefs=()=>localStorage.setItem(PREFKEY,JSON.stringify(prefs));
 const S={status:null,groups:[],group:null,channels:[],channel:null,role:null,room:null,joinedVoice:null,connecting:false,busy:false,sidebarOpen:prefs.sidebarOpen!==false && (!window.desktop?.isWeb || window.innerWidth>740),chatOpen:false,focus:false,poll:null,refreshing:false,modalAction:null,source:null,sources:[],sourceKind:'screen',cameraModes:null};
-const LK=()=>window.ConsivoLiveKit;
+const LK=()=>window.ZeonDirectCall;
 const DM=window.ZeonDM;
 const api=(command,args={})=>window.desktop.onlineInvoke(command,args);
 
-// Zeon Direct Share 0.5: optional direct screen media; voice remains on LiveKit.
-let zeonP2P=null;
-function p2pSharing(){return !!zeonP2P?.isSharing();}
-function isSharingScreen(){return p2pSharing()||!!S.room?.localParticipant?.isScreenShareEnabled;}
-function p2pStageSource(){
- const stage=zeonP2P?.getStage();if(!stage||!S.room)return null;
- const person=participants().find(p=>p.identity===stage.ownerId);
- return person?{person,track:stage.track,p2p:true,local:stage.local}:null;
-}
-function updateP2PAudio(ownerId,stream){
- const host=$('#remoteAudio');if(!host)return;
- for(const el of [...host.querySelectorAll('[data-p2p-owner]')])if(el.dataset.p2pOwner===ownerId)el.remove();
- const tracks=stream?.getAudioTracks?.().filter(t=>t.readyState==='live')||[];
- if(!tracks.length)return;
- const audio=document.createElement('audio');audio.autoplay=true;audio.dataset.remoteAudio='1';
- audio.dataset.p2pOwner=ownerId;audio.dataset.personId=ownerId;audio.dataset.audioSource='screen-share';
- audio.srcObject=new MediaStream(tracks);
- if(prefs.speakerId)audio.setSinkId?.(prefs.speakerId).catch?.(()=>{});
- host.append(audio);audio.play().catch(()=>{});applyPersonAudioLevels();
-}
-function initializeP2P(room){
- try{
-  zeonP2P=window.ZeonP2PShare?.create({room,lib:LK(),selfId:S.status?.userId,
-   onChange:()=>{if(S.room===room){renderWorkspace();renderDock();syncFloat();}},
-   onRemote:(owner,stream)=>{if(S.room===room){updateP2PAudio(owner,stream);renderWorkspace();syncFloat();}},
-   onError:e=>{if(S.room===room){console.warn('[Zeon P2P]',e);popup('P2P: '+(e?.message||'Falha de conexão direta.'));}}
-  })||null;
- }catch(e){zeonP2P=null;console.warn('[Zeon P2P]',e);}
-}
-function closeP2P(){
- const old=zeonP2P;zeonP2P=null;old?.close();
- for(const el of document.querySelectorAll('#remoteAudio [data-p2p-owner]'))el.remove();
-}
-function stopP2PShare(){zeonP2P?.stopSharing();renderWorkspace();renderDock();syncFloat();}
-function toggleP2PTransport(){
- if(isSharingScreen())return popup('Encerre a transmissão antes de trocar o transporte.');
- prefs.shareTransport=prefs.shareTransport==='p2p'?'livekit':'p2p';savePrefs();
- renderWorkspace();renderDock();
- popup(prefs.shareTransport==='p2p'?'Modo P2P experimental selecionado. Seus amigos precisam estar atualizados.':'Modo LiveKit selecionado.');
-}
-setInterval(async()=>{
- const stage=zeonP2P?.getStage();if(!stage||stage.local)return;
- const node=$('#p2pReceiverStats');if(!node)return;
- try{
-  const st=await zeonP2P.receiverStats();if(!st||!node.isConnected)return;
-  const fps=Number.isFinite(st.framesPerSecond)?Math.round(st.framesPerSecond)+' FPS':'FPS N/D';
-  const buffer=Number.isFinite(st.bufferMs)?Math.round(st.bufferMs)+' ms buffer médio':'buffer N/D';
-  node.textContent=' · Recepção: '+fps+' · '+buffer;
- }catch{}
-},2500);
+// Independent Direct Call transports voice, camera and screen in the same WebRTC mesh.
+function isSharingScreen(){return !!S.room?.localParticipant?.isScreenShareEnabled;}
 
 const group=()=>S.groups.find(g=>g.id===S.group);
 const channel=()=>S.channels.find(c=>c.id===S.channel);
@@ -158,7 +110,7 @@ function liveTrack(pub){return pub?.videoTrack||pub?.audioTrack||pub?.track||nul
 function sourceTrack(person,source){const lib=LK(),pub=lib&&person?.getTrackPublication?.(lib.Track.Source[source]);if(!pub||pub.isMuted||('isSubscribed' in pub&&!pub.isSubscribed))return null;return liveTrack(pub);}
 function participants(){return S.room?[S.room.localParticipant,...S.room.remoteParticipants.values()]:[];}
 function personLabel(p){return p===S.room?.localParticipant?displayName():(p.name||p.identity||'Participante');}
-function stageSource(){if(!S.room)return null;const direct=p2pStageSource();if(direct)return direct;for(const p of participants()){
+function stageSource(){if(!S.room)return null;for(const p of participants()){
  const t=sourceTrack(p,'ScreenShare');if(t)return {person:p,track:t};}return null;}
 function attachInto(track,node){if(!track||!node)return;try{track.attach(node);node.autoplay=true;node.playsInline=true;node.muted=true;bound.push([track,node]);node.play?.().catch?.(()=>{});}catch{}}
 // Identidade da trilha por objeto: uma substituição do MediaStreamTrack invalida a
@@ -248,7 +200,7 @@ function renderVoice(c){const root=$('#workspace');root.className='workspace voi
  '<div class="call-empty-card"><span>Conectando ao canal de voz…</span></div>';
  // Desanexar ANTES de substituir o DOM, para não abandonar elementos de vídeo antigos.
  detach();root.dataset.voiceSignature=signature;
- root.innerHTML=`<div class="call-layout ${share?'is-sharing':''}">${share?`<section class="call-broadcast"><video id="callSharedScreen" class="call-broadcast-video" autoplay muted playsinline></video><button class="broadcast-focus-toggle" data-action="focus" title="Maximizar transmissão" aria-label="Maximizar transmissão">${icon('expand')}</button><div class="broadcast-label">▣ ${escape(personLabel(share.person))} · Transmissão${share.p2p?' (P2P)':''}${share.p2p&&!share.local?'<span id="p2pReceiverStats"></span>':''}${share.person===S.room?.localParticipant?' <span id="screenSendStats" aria-live="off"></span>':''}</div></section>`:''}<div class="call-participants ${share?'call-participants--compact':''}">${participantHtml}</div><div class="voice-controls"><button class="voice-control" data-action="mic" aria-label="Microfone" title="Microfone" ${joined?'':'disabled'}>${icon('microphone-off')}</button><button class="voice-control" data-action="camera" aria-label="Câmera" title="Câmera" ${joined?'':'disabled'}>${icon('camera-off')}</button><button class="voice-control" data-action="share" aria-label="Transmitir tela" title="Transmitir tela" ${joined?'':'disabled'}>${icon('share')}</button><button class="voice-control zeon-transport-toggle ${prefs.shareTransport==='p2p'?'zeon-transport-on':''}" data-action="transport-toggle" title="Transporte de tela: P2P ou LiveKit" aria-label="Alternar transporte P2P">${prefs.shareTransport==='p2p'?'P2P':'LK'}</button></div></div>`;
+ root.innerHTML=`<div class="call-layout ${share?'is-sharing':''}">${share?`<section class="call-broadcast"><video id="callSharedScreen" class="call-broadcast-video" autoplay muted playsinline></video><button class="broadcast-focus-toggle" data-action="focus" title="Maximizar transmissão" aria-label="Maximizar transmissão">${icon('expand')}</button><div class="broadcast-label">▣ ${escape(personLabel(share.person))} · Transmissão direta${share.person===S.room?.localParticipant?' <span id="screenSendStats" aria-live="off"></span>':''}</div></section>`:''}<div class="call-participants ${share?'call-participants--compact':''}">${participantHtml}</div><div class="voice-controls"><button class="voice-control" data-action="mic" aria-label="Microfone" title="Microfone" ${joined?'':'disabled'}>${icon('microphone-off')}</button><button class="voice-control" data-action="camera" aria-label="Câmera" title="Câmera" ${joined?'':'disabled'}>${icon('camera-off')}</button><button class="voice-control" data-action="share" aria-label="Transmitir tela" title="Transmitir tela" ${joined?'':'disabled'}>${icon('share')}</button></div></div>`;
  if(share)attachInto(share.track,root.querySelector('#callSharedScreen'));
  for(const p of people){const t=sourceTrack(p,'Camera');if(t){const node=Array.from(root.querySelectorAll('[data-camera]')).find(n=>n.dataset.camera===p.identity);if(node)attachInto(t,node);}}
  refreshVoiceChrome(people,share,focus,joined);
@@ -279,7 +231,7 @@ async function showScreenSendStats(){
 setInterval(()=>void showScreenSendStats(),3000);
 function renderDock(){const active=!!S.room;$('#callDock').hidden=!active;
  if(!active){$('#callDock').replaceChildren();return;}
- const p=S.room.localParticipant;$('#callDock').innerHTML=`<div class="call-state"><span class="call-indicator">◖))</span><div><strong>Conectado à chamada</strong><small>${escape(joinedChannel()?.name||'Canal de voz')}</small></div></div><div class="call-buttons"><button class="dock-button ${p.isMicrophoneEnabled?'purple':'off'}" data-action="mic" aria-label="Microfone">${icon(p.isMicrophoneEnabled?'microphone':'microphone-off')}</button><button class="dock-button ${p.isCameraEnabled?'purple':''}" data-action="camera" aria-label="Câmera">${icon(p.isCameraEnabled?'camera':'camera-off')}</button><button class="dock-button ${isSharingScreen()?'sharing':''}" data-action="share" aria-label="Transmissão">${icon('share')}</button>${window.desktop?.isWeb?'':`<button class="dock-button purple" data-action="floating" title="Janela flutuante" aria-label="Janela flutuante">${icon('floating')}</button>`}<button class="dock-button zeon-transport-toggle ${prefs.shareTransport==='p2p'?'zeon-transport-on':''}" data-action="transport-toggle" title="Transporte: ${prefs.shareTransport==='p2p'?'P2P experimental':'LiveKit'}">${prefs.shareTransport==='p2p'?'P2P':'LK'}</button><button class="dock-button end" data-action="leave" aria-label="Sair da chamada">${icon('leave')}</button></div>`;
+ const p=S.room.localParticipant;$('#callDock').innerHTML=`<div class="call-state"><span class="call-indicator">◖))</span><div><strong>Conectado à chamada</strong><small>${escape(joinedChannel()?.name||'Canal de voz')}</small></div></div><div class="call-buttons"><button class="dock-button ${p.isMicrophoneEnabled?'purple':'off'}" data-action="mic" aria-label="Microfone">${icon(p.isMicrophoneEnabled?'microphone':'microphone-off')}</button><button class="dock-button ${p.isCameraEnabled?'purple':''}" data-action="camera" aria-label="Câmera">${icon(p.isCameraEnabled?'camera':'camera-off')}</button><button class="dock-button ${isSharingScreen()?'sharing':''}" data-action="share" aria-label="Transmissão">${icon('share')}</button>${window.desktop?.isWeb?'':`<button class="dock-button purple" data-action="floating" title="Janela flutuante" aria-label="Janela flutuante">${icon('floating')}</button>`}<button class="dock-button end" data-action="leave" aria-label="Sair da chamada">${icon('leave')}</button></div>`;
 }
 function drawMessages(root,records=[]){if(!root)return;const wasBottom=root.scrollTop+root.clientHeight>=root.scrollHeight-100;
  root.innerHTML=records.length?records.map(m=>`<div class="message" data-author-id="${escape(m.author_id)}"><span class="avatar">${escape(initials(m.author_name))}</span><div><div class="message-meta">${escape(m.author_name||'Participante')} <time>${new Date(m.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</time></div><div class="message-text">${escape(m.body)}</div></div></div>`).join(''):'<div class="chat-empty"><strong>Sem mensagens ainda</strong><p>Comece uma conversa neste canal.</p></div>';
@@ -297,40 +249,28 @@ async function refreshMessages(){if(DM?.active()||S.refreshing||!S.status?.logge
  if(active===S.channel&&$('#textMessages'))drawMessages($('#textMessages'),S.messageCache[active]);if(chat===S.joinedVoice)renderCallChat();}
  finally{S.refreshing=false;}}
 async function sendMessage(channelId,text){if(!text?.trim())return;await api('sendMessage',{channelId,text});await refreshMessages();}
-async function joinVoice(c){if(!LK())throw Error('Instale as dependências e execute npm run build:media antes de iniciar.');
+async function joinVoice(c){if(!LK())throw Error('Motor WebRTC direto indisponível. Atualize a página.');
  await leaveVoice();S.connecting=true;renderWorkspace();
- try{const ticket=await api('livekitToken',{channelId:c.id});if(!ticket?.token||!ticket?.url)throw Error('Token de chamada não retornado.');
- const lib=LK(),room=new lib.Room({adaptiveStream:true,dynacast:true});
- setupRoom(room,lib);
  try{
-  // Signal WebSocket pode demorar mais em redes móveis; não altera P2P nem o áudio.
-  await room.connect(ticket.url,ticket.token,{maxRetries:2,websocketTimeout:20000});
- }catch(connectError){
-  try{await room.disconnect();}catch{}
-  const text=String(connectError?.message||'');
-  const signalFailure=/websocket|signal connection|server.*unreachable|network|timed?\s*out|timeout/i.test(text);
-  if(signalFailure){
-   console.warn('[Zeon] Falha de sinalização LiveKit:',{reason:connectError?.reasonName||connectError?.reason||'desconhecido',status:connectError?.status||null});
-   const friendly=new Error('Não foi possível conectar ao servidor de chamadas (WebSocket). Tente novamente usando Wi-Fi ou outra rede. Se persistir, o endereço do LiveKit precisa ser verificado.');
-   friendly.cause=connectError;
-   throw friendly;
-  }
-  throw connectError;
- }
- S.room=room;S.joinedVoice=c.id;S.focus=false;
- initializeP2P(room);
- try{await room.startAudio();}catch{popup('Clique no Zeon para ativar a reprodução de áudio.');}
- setConnection('NA CHAMADA',true);render();popup('Conectado a '+c.name);
+  const credentials=await api('p2pSession',{channelId:c.id});
+  const lib=LK(),room=new lib.Room();
+  setupRoom(room,lib);
+  await room.connect({...credentials,channelId:c.id,name:displayName(),refresh:()=>api('p2pSession',{channelId:c.id})});
+  S.room=room;S.joinedVoice=c.id;S.focus=false;
+  room.on('NetworkIssue',err=>popup('Conexão direta: '+(err?.message||'Falha de rede.')));
+  try{await room.startAudio();}catch{popup('Toque no Zeon para liberar o áudio.');}
+  setConnection('NA CHAMADA · P2P',true);render();popup('Conectado a '+c.name+' (P2P)');
  }catch(err){S.room=null;S.joinedVoice=null;setConnection('ONLINE',true);throw err;}
- finally{S.connecting=false;renderWorkspace();}}
+ finally{S.connecting=false;renderWorkspace();}
+}
 function setupRoom(room,lib){const update=()=>{if(S.room===room){renderWorkspace();renderDock();syncFloat();}};
  for(const name of ['ParticipantConnected','ParticipantDisconnected','TrackSubscribed','TrackUnsubscribed','TrackPublished','TrackUnpublished','LocalTrackPublished','LocalTrackUnpublished','TrackMuted','TrackUnmuted','ActiveSpeakersChanged']){
  const ev=lib.RoomEvent[name];if(ev)room.on(ev,update);}
  room.on(lib.RoomEvent.TrackSubscribed,(t,pub,person)=>{if(t.kind===lib.Track.Kind.Audio){const el=t.attach();el.autoplay=true;el.dataset.remoteAudio='1';el.dataset.personId=person?.identity||'';el.dataset.audioSource=pub?.source===lib.Track.Source.ScreenShareAudio?'screen-share':'microphone';if(prefs.speakerId)el.setSinkId?.(prefs.speakerId).catch?.(()=>{});$('#remoteAudio')?.append(el);applyPersonAudioLevels();}});
  room.on(lib.RoomEvent.TrackUnsubscribed,(t)=>{if(t.kind===lib.Track.Kind.Audio){try{for(const el of t.detach())el.remove();}catch{}}});
- room.on(lib.RoomEvent.Disconnected,()=>{if(S.room===room){closeP2P();S.room=null;S.joinedVoice=null;S.focus=false;setConnection('DESCONECTADO');render();popup('Chamada encerrada.');}});
+ room.on(lib.RoomEvent.Disconnected,()=>{if(S.room===room){S.room=null;S.joinedVoice=null;S.focus=false;setConnection('DESCONECTADO');render();popup('Chamada encerrada.');}});
 }
-async function leaveVoice(){closeP2P();const room=S.room;S.room=null;S.joinedVoice=null;S.focus=false;
+async function leaveVoice(){const room=S.room;S.room=null;S.joinedVoice=null;S.focus=false;
  if(room)await room.disconnect();hidePersonVolumePanel();$('#remoteAudio').replaceChildren();detach();renderDock();syncFloat();}
 async function requestPermission(kind){const r=await window.desktop.ensureMediaPermission(kind);return !!r?.granted;}
 async function setMedia(kind){const room=S.room;if(!room||S.busy)return;S.busy=true;
@@ -339,21 +279,11 @@ async function setMedia(kind){const room=S.room;if(!room||S.busy)return;S.busy=t
  if(kind==='camera'){if(!p.isCameraEnabled&&!await requestPermission('camera'))return;
  const dim=window.ConsivoCameraQuality&&{480:[854,480],720:[1280,720],1080:[1920,1080]}[prefs.cameraResolution]||[1280,720];
  await p.setCameraEnabled(!p.isCameraEnabled,{...(prefs.cameraId?{deviceId:prefs.cameraId}:{}),resolution:{width:dim[0],height:dim[1]},frameRate:prefs.cameraFps});}
- if(kind==='share'){if(p2pSharing())stopP2PShare();else if(p.isScreenShareEnabled)await p.setScreenShareEnabled(false);else await openPicker();}
+ if(kind==='share'){if(p.isScreenShareEnabled)await p.setScreenShareEnabled(false);else await openPicker();}
  }catch(err){if(/denied|notallowed|permission/i.test(String(err.message)))void window.desktop.offerWindowsMediaSettings(kind==='mic'?'microphone':'camera');throw err;}
  finally{S.busy=false;renderWorkspace();renderDock();syncFloat();}}
 async function openPicker(){if(!S.room)return;
  if(window.desktop?.isWeb){
-  if(prefs.shareTransport==='p2p'){
-   if(!zeonP2P)throw Error('P2P indisponível nesta chamada.');
-   if(!navigator.mediaDevices?.getDisplayMedia)throw Error('Seu navegador não oferece compartilhamento de tela.');
-   const fps=Number(prefs.shareFps)||30;
-   const stream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:fps},audio:true});
-   try{await zeonP2P.startSharing(stream,{maxFramerate:fps,maxBitrate:fps>=60?4000000:2500000});}
-   catch(e){stream.getTracks().forEach(t=>t.stop());throw e;}
-   popup(zeonP2P.hasSupport()?'P2P iniciado.':'P2P iniciado: aguardando receptor atualizado.');
-   renderWorkspace();renderDock();return;
-  }
   if(!navigator.mediaDevices?.getDisplayMedia)throw Error('Seu navegador não oferece compartilhamento de tela.');
   await S.room.localParticipant.setScreenShareEnabled(true);
   return;
@@ -546,7 +476,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');
  if(a==='source-filter'){S.sourceKind=b.dataset.type;S.source=null;renderSources();}
  if(a==='pick-source'){S.source=S.sources.find(x=>x.id===id)||null;renderSources();}
  if(a==='start-capture')void task(startShare);if(a==='close-capture')$('#capturePicker').close();
- if(a==='transport-toggle')toggleP2PTransport();
+
  if(a==='mic'||a==='camera'||a==='share')void task(()=>setMedia(a));
  if(a==='leave')void task(leaveVoice);if(a==='floating')openFloating();
  if(a==='focus'&&stageSource()){
