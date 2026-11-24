@@ -1,5 +1,5 @@
 'use strict';
-// Consivo 0.7.3: a interface original é a única UI; Supabase + LiveKit são as fontes de dados.
+// Zeon Direct 0.9: Supabase para dados e sinalização; WebRTC P2P para voz, câmera e tela.
 (()=>{
 const $=s=>document.querySelector(s);
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -17,7 +17,7 @@ const iconPaths={
 };
 const icon=name=>`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${iconPaths[name]||''}</svg>`;
 const PREFKEY='consivo-v06-preferences';
-const defaults={microphoneId:'',cameraId:'',speakerId:'',volume:75,sidebarOpen:true,cameraResolution:'720',cameraFps:30,cameraMirror:true,cameraFit:'cover',shareResolution:'1080',shareFps:30,shareTransport:'direct'};
+const defaults={microphoneId:'',cameraId:'',speakerId:'',volume:75,sidebarOpen:true,cameraResolution:'720',cameraFps:30,cameraMirror:true,cameraFit:'cover',shareResolution:'1080',shareFps:30};
 let prefs={...defaults};try{prefs={...prefs,...JSON.parse(localStorage.getItem(PREFKEY)||'{}')};}catch{}
 const compat=window.ConsivoMediaCompat,qual=window.ConsivoCameraQuality,shareQual=window.ConsivoShareQuality;
 Object.assign(prefs,qual?.normalize(prefs)||{},shareQual?.normalizeShareSettings(prefs)||{});
@@ -183,7 +183,6 @@ function refreshVoiceChrome(people,share,focus,joined){
   b.classList.toggle('active',enabled);b.disabled=!joined;
   if(b.dataset.state!==String(enabled)){b.dataset.state=String(enabled);b.innerHTML=icon(type==='mic'&&!enabled?'microphone-off':type==='camera'&&!enabled?'camera-off':glyph);}
  }
- const toggle=root.querySelector('[data-action="transport-toggle"]');if(toggle){toggle.textContent=prefs.shareTransport==='p2p'?'P2P':'LK';toggle.classList.toggle('zeon-transport-on',prefs.shareTransport==='p2p');}
  syncDesktopShareFullscreenButton();
 }
 function renderVoice(c){const root=$('#workspace');root.className='workspace voice-workspace';const joined=S.joinedVoice===c.id&&!!S.room;
