@@ -56,13 +56,20 @@ class Room{
   return p;
  }
  async publish(source,media){
-  if(!media||!sources.includes(source))throw Error('Trilha inválida.');
+  if(!media||!sources.includes(source)||media.readyState!=='live')throw Error('Trilha de mídia P2P indisponível.');
   await this.remove(source);if(this.closed)throw Error('Chamada encerrada.');
   this.media.set(source,media);
   const pub=publication(media,source,()=>[...this.peers.values()].map(p=>p.transceivers[sources.indexOf(source)]?.sender).filter(Boolean));
   this.localParticipant.trackPublications.set(source,pub);this.flags();
   media.addEventListener?.('ended',()=>{if(this.media.get(source)===media)void this.remove(source);},{once:true});
-  await Promise.all([...this.peers.values()].map(p=>p.transceivers[sources.indexOf(source)].sender.replaceTrack(media).catch(()=>{})));
+  const result=await Promise.all([...this.peers.values()].map(async peer=>{
+   try{await peer.transceivers[sources.indexOf(source)].sender.replaceTrack(media);return {ok:true};}
+   catch(error){console.warn('[Zeon Direct] Falha ao enviar '+source,error);return {ok:false,error};}
+  }));
+  const failed=result.filter(x=>!x.ok);
+  if(failed.length){this.emit('NetworkIssue',new Error('Falha ao enviar '+source+' para '+failed.length+' participante(s).'));
+   if(failed.length===result.length){this.media.delete(source);this.localParticipant.trackPublications.delete(source);this.flags();throw Error('Falha ao publicar '+source+': '+(failed[0].error?.message||'erro WebRTC'));}
+  }
   this.signal({type:'state',sources:[...this.media.keys()]});this.emit(RoomEvent.LocalTrackPublished,pub,this.localParticipant);return pub;
  }
  async remove(source,stop=true){
@@ -149,12 +156,26 @@ class Room{
  }
  stateTo(peer){this.signal({to:peer.id,type:'state',sources:[...this.media.keys()]});}
   resendCandidates(peer){for(const ice of peer.candidates)this.signal({to:peer.id,type:'ice',candidate:ice});}
+  async senderHealth(source=Source.ScreenShare){
+   const peers=[];
+   for(const peer of this.peers.values()){
+    const sender=peer.transceivers[sources.indexOf(source)]?.sender;
+    const o={name:peer.user.name,connection:peer.pc.connectionState,track:sender?.track?.readyState||'missing',framesEncoded:null,bytesSent:null};
+    try{(await sender?.getStats())?.forEach(v=>{if(v.type==='outbound-rtp'&&(v.kind||v.mediaType)==='video'){o.framesEncoded=v.framesEncoded??null;o.bytesSent=v.bytesSent??null;}});}catch{}
+    peers.push(o);
+   }
+   return {trackState:this.media.get(source)?.readyState||'missing',peers};
+  }
   async receptionHealth(identity,source=Source.ScreenShare){
    const peer=[...this.peers.values()].find(p=>p.user.identity===identity);if(!peer)return null;
    const tr=peer.transceivers[sources.indexOf(source)],media=peer.media.get(source)||tr?.receiver.track;
-   const health={connection:peer.pc.connectionState||'unknown',ice:peer.pc.iceConnectionState||'unknown',trackState:media?.readyState||'missing',muted:!!media?.muted,announced:peer.flags.has(source),framesDecoded:null,bytesReceived:null,packetsReceived:null};
-   try{const reports=await peer.pc.getStats();let inbound;reports.forEach(r=>{if(r.type==='inbound-rtp'&&!r.isRemote&&(r.kind||r.mediaType)==='video'&&(r.mid===tr?.mid||r.trackIdentifier===media?.id))inbound=r;});if(inbound){health.framesDecoded=inbound.framesDecoded??null;health.bytesReceived=inbound.bytesReceived??null;health.packetsReceived=inbound.packetsReceived??null;}}catch{}
-   return health;
+   const h={connection:peer.pc.connectionState||'unknown',ice:peer.pc.iceConnectionState||'unknown',trackState:media?.readyState||'missing',muted:!!media?.muted,announced:peer.flags.has(source),framesDecoded:null,bytesReceived:null,packetsReceived:null};
+   try{
+    const reports=await (typeof tr?.receiver?.getStats==='function'?tr.receiver.getStats():peer.pc.getStats());
+    let inbound;reports.forEach(v=>{if(v.type==='inbound-rtp'&&!v.isRemote&&(v.kind||v.mediaType)==='video'&&(!inbound||v.mid===tr?.mid||v.trackIdentifier===media?.id))inbound=v;});
+    if(inbound){h.framesDecoded=inbound.framesDecoded??null;h.bytesReceived=inbound.bytesReceived??null;h.packetsReceived=inbound.packetsReceived??null;}
+   }catch{}
+   return h;
   }
  async flush(peer){for(const c of peer.pending.splice(0))try{await peer.pc.addIceCandidate(c);}catch{}}
  sync(peer){

@@ -112,7 +112,7 @@ function participants(){return S.room?[S.room.localParticipant,...S.room.remoteP
 function personLabel(p){return p===S.room?.localParticipant?displayName():(p.name||p.identity||'Participante');}
 function stageSource(){if(!S.room)return null;for(const p of participants()){
  const t=sourceTrack(p,'ScreenShare');if(t)return {person:p,track:t};}return null;}
-// Um aviso de transmissão não significa que os quadros chegaram ao receptor.
+// Monitor de recepção: rede, decodificação e reprodução não são a mesma coisa.
 let zeonReceptionEpoch=0;
 setInterval(async()=>{
  const room=S.room,share=stageSource(),node=document.querySelector('#zeonReceptionHealth');
@@ -121,18 +121,30 @@ setInterval(async()=>{
  try{
   const h=await room.receptionHealth?.(share.person.identity,'screen_share');
   if(epoch!==zeonReceptionEpoch||room!==S.room||!node.isConnected)return;
+  const frames=Number.isFinite(h?.framesDecoded)?h.framesDecoded:null;
+  const kb=Number.isFinite(h?.bytesReceived)?Math.round(h.bytesReceived/1024):null;
   const playing=!!(video?.videoWidth&&video?.readyState>=2&&!video?.paused);
-  const frames=h?.framesDecoded;
-  if(playing&&frames!==0){node.textContent=' · Vídeo recebido';node.dataset.state='ok';}
-  else if(['failed','disconnected','closed'].includes(h?.ice)||['failed','disconnected','closed'].includes(h?.connection)){
-   node.textContent=' · P2P sem conexão de mídia (rede/TURN)';node.dataset.state='error';
-  }else if(h?.connection==='connected'&&(frames===0||h?.trackState==='live')){
-   node.textContent=' · Conectado, aguardando quadros de vídeo';node.dataset.state='pending';
-  }else{node.textContent=' · Conectando vídeo P2P ('+(h?.ice||h?.connection||'aguardando')+')';node.dataset.state='pending';}
- }catch{if(node.isConnected)node.textContent=' · Diagnóstico de vídeo indisponível';}
+  let status='pending',label='Aguardando diagnóstico';
+  if(playing){label='Vídeo reproduzindo'+(frames!==null?' · '+frames+' quadros':'');status='ok';}
+  else if(['failed','disconnected','closed'].includes(h?.connection)||['failed','disconnected','closed'].includes(h?.ice)){label='Conexão de mídia falhou (ICE '+(h?.ice||'N/D')+')';status='error';}
+  else if(frames!==null&&frames>0){label='Quadros recebidos ('+frames+'), mas vídeo não reproduz no navegador';status='error';}
+  else if(kb!==null&&kb>0){label='Recebidos '+kb+' KB, mas 0 quadros decodificados';status='error';}
+  else if(frames===0){label='0 quadros recebidos · '+(h?.muted?'trilha sem mídia':'trilha ativa')+' · ICE '+(h?.ice||'N/D');status='error';}
+  else{label='P2P '+(h?.connection||'N/D')+' · '+(h?.muted?'trilha sem mídia':'trilha ativa')+' · estatísticas indisponíveis';}
+  node.textContent=' · '+label;node.dataset.state=status;
+ }catch{if(node.isConnected)node.textContent=' · Não foi possível consultar estatísticas';}
 },2000);
-
-function attachInto(track,node){if(!track||!node)return;try{track.attach(node);node.autoplay=true;node.playsInline=true;node.muted=true;bound.push([track,node]);node.play?.().catch?.(()=>{});}catch{}}
+function attachInto(track,node){
+ if(!track||!node)return;
+ try{
+  track.attach(node);node.autoplay=true;node.playsInline=true;node.muted=true;bound.push([track,node]);
+  const start=()=>{if(node.isConnected)node.play?.().catch?.(err=>console.warn('[Zeon] Reprodução de vídeo:',err?.name));};
+  node.addEventListener('loadedmetadata',start,{once:true});
+  node.addEventListener('canplay',start,{once:true});
+  track.mediaStreamTrack?.addEventListener?.('unmute',start,{once:true});
+  start();
+ }catch(err){console.warn('[Zeon] Falha anexando vídeo remoto:',err);}
+}
 // Identidade da trilha por objeto: uma substituição do MediaStreamTrack invalida a
 // estrutura mesmo quando seu identificador textual for reaproveitado.
 const voiceTrackIds=new WeakMap();let voiceTrackNumber=0;
