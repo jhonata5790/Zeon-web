@@ -63,7 +63,7 @@ class Room{
   this.localParticipant.trackPublications.set(source,pub);this.flags();
   media.addEventListener?.('ended',()=>{if(this.media.get(source)===media)void this.remove(source);},{once:true});
   const result=await Promise.all([...this.peers.values()].map(async peer=>{
-   try{await peer.transceivers[sources.indexOf(source)].sender.replaceTrack(media);return {ok:true};}
+   try{const sender=peer.transceivers[sources.indexOf(source)]?.sender;if(sender)await sender.replaceTrack(media);return {ok:true};}
    catch(error){console.warn('[Zeon Direct] Falha ao enviar '+source,error);return {ok:false,error};}
   }));
   const failed=result.filter(x=>!x.ok);
@@ -75,7 +75,7 @@ class Room{
  async remove(source,stop=true){
   const pub=this.localParticipant?.trackPublications.get(source);if(!pub)return;
   this.localParticipant.trackPublications.delete(source);this.media.delete(source);this.flags();
-  await Promise.all([...this.peers.values()].map(p=>p.transceivers[sources.indexOf(source)].sender.replaceTrack(null).catch(()=>{})));
+  await Promise.all([...this.peers.values()].map(p=>p.transceivers[sources.indexOf(source)]?.sender?.replaceTrack(null).catch(()=>{})));
   if(stop)try{pub.track.mediaStreamTrack.stop();}catch{}
   this.signal({type:'state',sources:[...this.media.keys()]});this.emit(RoomEvent.LocalTrackUnpublished,pub,this.localParticipant);
  }
@@ -124,11 +124,12 @@ class Room{
   const user={identity:meta.userId+':'+meta.deviceId,name:meta.name||'Participante',trackPublications:new Map(),getTrackPublication(s){return this.trackPublications.get(s)||null;}};
   this.remoteParticipants.set(user.identity,user);this.emit(RoomEvent.ParticipantConnected,user);
   const pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
-  const peer={id:meta.deviceId,user,pc,transceivers:[],media:new Map(),flags:new Set(),pending:[],candidates:[],offered:false};this.peers.set(peer.id,peer);
-  peer.transceivers=sources.map((source,i)=>{const t=pc.addTransceiver(kinds[i],{direction:'sendrecv'});const local=this.media.get(source);if(local)void t.sender.replaceTrack(local).catch(()=>{});return t;});
+  const peer={id:meta.deviceId,user,pc,transceivers:[],pendingTrackEvents:[],media:new Map(),flags:new Set(),pending:[],candidates:[],offered:false};this.peers.set(peer.id,peer);
+  // The offerer allocates slots; Chromium creates the answerer's transceivers from SDP.
+  if(this.id<peer.id)peer.transceivers=sources.map((source,i)=>{const t=pc.addTransceiver(kinds[i],{direction:'sendrecv'});const local=this.media.get(source);if(local)void t.sender.replaceTrack(local).catch(()=>{});return t;});
   pc.onicecandidate=e=>{if(!e.candidate)return;const ice=e.candidate.toJSON?.()||e.candidate;if(peer.candidates.length<48)peer.candidates.push(ice);this.signal({to:peer.id,type:'ice',candidate:ice});};
   pc.ontrack=e=>{
-   const index=peer.transceivers.findIndex(t=>t===e.transceiver||(e.transceiver?.mid!=null&&t.mid===e.transceiver.mid)||(e.receiver&&t.receiver===e.receiver));if(index<0)return;
+   const index=peer.transceivers.findIndex(t=>t===e.transceiver||(e.transceiver?.mid!=null&&t.mid===e.transceiver.mid)||(e.receiver&&t.receiver===e.receiver));if(index<0){peer.pendingTrackEvents.push(e);return;}
    const source=sources[index];peer.media.set(source,e.track);this.sync(peer);
    e.track.addEventListener?.('unmute',()=>this.sync(peer));e.track.addEventListener?.('ended',()=>{if(peer.media.get(source)===e.track){peer.media.delete(source);this.sync(peer);}});
   };
@@ -148,7 +149,21 @@ class Room{
   if(this.closed||!data||data.to&&data.to!==this.id||data.from===this.id)return;
   const peer=this.peers.get(data.from);if(!peer)return;
   try{
-   if(data.type==='offer'&&data.sdp?.type==='offer'){await peer.pc.setRemoteDescription(data.sdp);await this.flush(peer);await peer.pc.setLocalDescription(await peer.pc.createAnswer());this.signal({to:peer.id,type:'answer',sdp:peer.pc.localDescription});this.resendCandidates(peer);this.stateTo(peer);}
+   if(data.type==='offer'&&data.sdp?.type==='offer'){
+    await peer.pc.setRemoteDescription(data.sdp);
+    const negotiated=peer.pc.getTransceivers();
+    if(negotiated.length<sources.length)throw Error('SDP remoto incompleto.');
+    peer.transceivers=negotiated.slice(0,sources.length);
+    for(let i=0;i<sources.length;i++){
+     const t=peer.transceivers[i];
+     if(t.receiver.track.kind!==kinds[i])throw Error('Ordem de trilhas incompatível.');
+     t.direction='sendrecv';
+     const track=this.media.get(sources[i]);if(track)await t.sender.replaceTrack(track);
+    }
+    for(const e of peer.pendingTrackEvents.splice(0))peer.pc.ontrack?.(e);
+    await this.flush(peer);await peer.pc.setLocalDescription(await peer.pc.createAnswer());
+    this.signal({to:peer.id,type:'answer',sdp:peer.pc.localDescription});this.resendCandidates(peer);this.stateTo(peer);
+   }
    else if(data.type==='answer'&&data.sdp?.type==='answer'){await peer.pc.setRemoteDescription(data.sdp);await this.flush(peer);this.resendCandidates(peer);this.stateTo(peer);}
    else if(data.type==='ice'&&data.candidate){if(!peer.pc.remoteDescription)peer.pending.push(data.candidate);else await peer.pc.addIceCandidate(data.candidate);}
    else if(data.type==='state'&&Array.isArray(data.sources)){peer.flags=new Set(data.sources.filter(s=>sources.includes(s)));this.sync(peer);}
