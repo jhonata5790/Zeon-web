@@ -112,6 +112,26 @@ function participants(){return S.room?[S.room.localParticipant,...S.room.remoteP
 function personLabel(p){return p===S.room?.localParticipant?displayName():(p.name||p.identity||'Participante');}
 function stageSource(){if(!S.room)return null;for(const p of participants()){
  const t=sourceTrack(p,'ScreenShare');if(t)return {person:p,track:t};}return null;}
+// Um aviso de transmissão não significa que os quadros chegaram ao receptor.
+let zeonReceptionEpoch=0;
+setInterval(async()=>{
+ const room=S.room,share=stageSource(),node=document.querySelector('#zeonReceptionHealth');
+ if(!node||!room||!share||share.person===room.localParticipant)return;
+ const video=document.querySelector('#callSharedScreen'),epoch=++zeonReceptionEpoch;
+ try{
+  const h=await room.receptionHealth?.(share.person.identity,'screen_share');
+  if(epoch!==zeonReceptionEpoch||room!==S.room||!node.isConnected)return;
+  const playing=!!(video?.videoWidth&&video?.readyState>=2&&!video?.paused);
+  const frames=h?.framesDecoded;
+  if(playing&&frames!==0){node.textContent=' · Vídeo recebido';node.dataset.state='ok';}
+  else if(['failed','disconnected','closed'].includes(h?.ice)||['failed','disconnected','closed'].includes(h?.connection)){
+   node.textContent=' · P2P sem conexão de mídia (rede/TURN)';node.dataset.state='error';
+  }else if(h?.connection==='connected'&&(frames===0||h?.trackState==='live')){
+   node.textContent=' · Conectado, aguardando quadros de vídeo';node.dataset.state='pending';
+  }else{node.textContent=' · Conectando vídeo P2P ('+(h?.ice||h?.connection||'aguardando')+')';node.dataset.state='pending';}
+ }catch{if(node.isConnected)node.textContent=' · Diagnóstico de vídeo indisponível';}
+},2000);
+
 function attachInto(track,node){if(!track||!node)return;try{track.attach(node);node.autoplay=true;node.playsInline=true;node.muted=true;bound.push([track,node]);node.play?.().catch?.(()=>{});}catch{}}
 // Identidade da trilha por objeto: uma substituição do MediaStreamTrack invalida a
 // estrutura mesmo quando seu identificador textual for reaproveitado.
@@ -199,7 +219,7 @@ function renderVoice(c){const root=$('#workspace');root.className='workspace voi
  '<div class="call-empty-card"><span>Conectando ao canal de voz…</span></div>';
  // Desanexar ANTES de substituir o DOM, para não abandonar elementos de vídeo antigos.
  detach();root.dataset.voiceSignature=signature;
- root.innerHTML=`<div class="call-layout ${share?'is-sharing':''}">${share?`<section class="call-broadcast"><video id="callSharedScreen" class="call-broadcast-video" autoplay muted playsinline></video><button class="broadcast-focus-toggle" data-action="focus" title="Maximizar transmissão" aria-label="Maximizar transmissão">${icon('expand')}</button><div class="broadcast-label">▣ ${escape(personLabel(share.person))} · Transmissão direta${share.person===S.room?.localParticipant?' <span id="screenSendStats" aria-live="off"></span>':''}</div></section>`:''}<div class="call-participants ${share?'call-participants--compact':''}">${participantHtml}</div><div class="voice-controls"><button class="voice-control" data-action="mic" aria-label="Microfone" title="Microfone" ${joined?'':'disabled'}>${icon('microphone-off')}</button><button class="voice-control" data-action="camera" aria-label="Câmera" title="Câmera" ${joined?'':'disabled'}>${icon('camera-off')}</button><button class="voice-control" data-action="share" aria-label="Transmitir tela" title="Transmitir tela" ${joined?'':'disabled'}>${icon('share')}</button></div></div>`;
+ root.innerHTML=`<div class="call-layout ${share?'is-sharing':''}">${share?`<section class="call-broadcast"><video id="callSharedScreen" class="call-broadcast-video" autoplay muted playsinline></video><button class="broadcast-focus-toggle" data-action="focus" title="Maximizar transmissão" aria-label="Maximizar transmissão">${icon('expand')}</button><div class="broadcast-label">▣ ${escape(personLabel(share.person))} · Transmissão direta${share.person!==S.room?.localParticipant?'<span id="zeonReceptionHealth" aria-live="polite"> · Verificando vídeo P2P…</span>':''}${share.person===S.room?.localParticipant?' <span id="screenSendStats" aria-live="off"></span>':''}</div></section>`:''}<div class="call-participants ${share?'call-participants--compact':''}">${participantHtml}</div><div class="voice-controls"><button class="voice-control" data-action="mic" aria-label="Microfone" title="Microfone" ${joined?'':'disabled'}>${icon('microphone-off')}</button><button class="voice-control" data-action="camera" aria-label="Câmera" title="Câmera" ${joined?'':'disabled'}>${icon('camera-off')}</button><button class="voice-control" data-action="share" aria-label="Transmitir tela" title="Transmitir tela" ${joined?'':'disabled'}>${icon('share')}</button></div></div>`;
  if(share)attachInto(share.track,root.querySelector('#callSharedScreen'));
  for(const p of people){const t=sourceTrack(p,'Camera');if(t){const node=Array.from(root.querySelectorAll('[data-camera]')).find(n=>n.dataset.camera===p.identity);if(node)attachInto(t,node);}}
  refreshVoiceChrome(people,share,focus,joined);

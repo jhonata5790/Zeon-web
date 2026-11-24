@@ -117,15 +117,16 @@ class Room{
   const user={identity:meta.userId+':'+meta.deviceId,name:meta.name||'Participante',trackPublications:new Map(),getTrackPublication(s){return this.trackPublications.get(s)||null;}};
   this.remoteParticipants.set(user.identity,user);this.emit(RoomEvent.ParticipantConnected,user);
   const pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
-  const peer={id:meta.deviceId,user,pc,transceivers:[],media:new Map(),flags:new Set(),pending:[],offered:false};this.peers.set(peer.id,peer);
+  const peer={id:meta.deviceId,user,pc,transceivers:[],media:new Map(),flags:new Set(),pending:[],candidates:[],offered:false};this.peers.set(peer.id,peer);
   peer.transceivers=sources.map((source,i)=>{const t=pc.addTransceiver(kinds[i],{direction:'sendrecv'});const local=this.media.get(source);if(local)void t.sender.replaceTrack(local).catch(()=>{});return t;});
-  pc.onicecandidate=e=>{if(e.candidate)this.signal({to:peer.id,type:'ice',candidate:e.candidate.toJSON?.()||e.candidate});};
+  pc.onicecandidate=e=>{if(!e.candidate)return;const ice=e.candidate.toJSON?.()||e.candidate;if(peer.candidates.length<48)peer.candidates.push(ice);this.signal({to:peer.id,type:'ice',candidate:ice});};
   pc.ontrack=e=>{
-   const index=peer.transceivers.findIndex(t=>t===e.transceiver||t.mid===e.transceiver?.mid);if(index<0)return;
+   const index=peer.transceivers.findIndex(t=>t===e.transceiver||(e.transceiver?.mid!=null&&t.mid===e.transceiver.mid)||(e.receiver&&t.receiver===e.receiver));if(index<0)return;
    const source=sources[index];peer.media.set(source,e.track);this.sync(peer);
    e.track.addEventListener?.('unmute',()=>this.sync(peer));e.track.addEventListener?.('ended',()=>{if(peer.media.get(source)===e.track){peer.media.delete(source);this.sync(peer);}});
   };
-  pc.onconnectionstatechange=()=>{if(pc.connectionState==='failed')this.emit('NetworkIssue',Error('Conexão direta indisponível: esta rede pode precisar de TURN.'));};
+  pc.onconnectionstatechange=()=>{this.emit('NetworkStatus',user,pc.connectionState,pc.iceConnectionState);if(pc.connectionState==='failed')this.emit('NetworkIssue',Error('Conexão direta indisponível: esta rede pode precisar de TURN.'));};
+   pc.oniceconnectionstatechange=()=>this.emit('NetworkStatus',user,pc.connectionState,pc.iceConnectionState);
   if(this.id<peer.id)void this.offer(peer);
  }
  async offer(peer){if(peer.offered||this.closed)return;peer.offered=true;
@@ -140,13 +141,21 @@ class Room{
   if(this.closed||!data||data.to&&data.to!==this.id||data.from===this.id)return;
   const peer=this.peers.get(data.from);if(!peer)return;
   try{
-   if(data.type==='offer'&&data.sdp?.type==='offer'){await peer.pc.setRemoteDescription(data.sdp);await this.flush(peer);await peer.pc.setLocalDescription(await peer.pc.createAnswer());this.signal({to:peer.id,type:'answer',sdp:peer.pc.localDescription});this.stateTo(peer);}
-   else if(data.type==='answer'&&data.sdp?.type==='answer'){await peer.pc.setRemoteDescription(data.sdp);await this.flush(peer);this.stateTo(peer);}
+   if(data.type==='offer'&&data.sdp?.type==='offer'){await peer.pc.setRemoteDescription(data.sdp);await this.flush(peer);await peer.pc.setLocalDescription(await peer.pc.createAnswer());this.signal({to:peer.id,type:'answer',sdp:peer.pc.localDescription});this.resendCandidates(peer);this.stateTo(peer);}
+   else if(data.type==='answer'&&data.sdp?.type==='answer'){await peer.pc.setRemoteDescription(data.sdp);await this.flush(peer);this.resendCandidates(peer);this.stateTo(peer);}
    else if(data.type==='ice'&&data.candidate){if(!peer.pc.remoteDescription)peer.pending.push(data.candidate);else await peer.pc.addIceCandidate(data.candidate);}
    else if(data.type==='state'&&Array.isArray(data.sources)){peer.flags=new Set(data.sources.filter(s=>sources.includes(s)));this.sync(peer);}
   }catch(e){console.warn('[Zeon Direct] Negociação:',e?.message);this.emit('NetworkIssue',e);}
  }
  stateTo(peer){this.signal({to:peer.id,type:'state',sources:[...this.media.keys()]});}
+  resendCandidates(peer){for(const ice of peer.candidates)this.signal({to:peer.id,type:'ice',candidate:ice});}
+  async receptionHealth(identity,source=Source.ScreenShare){
+   const peer=[...this.peers.values()].find(p=>p.user.identity===identity);if(!peer)return null;
+   const tr=peer.transceivers[sources.indexOf(source)],media=peer.media.get(source)||tr?.receiver.track;
+   const health={connection:peer.pc.connectionState||'unknown',ice:peer.pc.iceConnectionState||'unknown',trackState:media?.readyState||'missing',muted:!!media?.muted,announced:peer.flags.has(source),framesDecoded:null,bytesReceived:null,packetsReceived:null};
+   try{const reports=await peer.pc.getStats();let inbound;reports.forEach(r=>{if(r.type==='inbound-rtp'&&!r.isRemote&&(r.kind||r.mediaType)==='video'&&(r.mid===tr?.mid||r.trackIdentifier===media?.id))inbound=r;});if(inbound){health.framesDecoded=inbound.framesDecoded??null;health.bytesReceived=inbound.bytesReceived??null;health.packetsReceived=inbound.packetsReceived??null;}}catch{}
+   return health;
+  }
  async flush(peer){for(const c of peer.pending.splice(0))try{await peer.pc.addIceCandidate(c);}catch{}}
  sync(peer){
   for(const source of sources){
