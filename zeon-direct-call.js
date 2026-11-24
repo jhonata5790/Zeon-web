@@ -128,7 +128,14 @@ class Room{
   pc.onconnectionstatechange=()=>{if(pc.connectionState==='failed')this.emit('NetworkIssue',Error('Conexão direta indisponível: esta rede pode precisar de TURN.'));};
   if(this.id<peer.id)void this.offer(peer);
  }
- async offer(peer){if(peer.offered||this.closed)return;peer.offered=true;try{await peer.pc.setLocalDescription(await peer.pc.createOffer());this.signal({to:peer.id,type:'offer',sdp:peer.pc.localDescription});}catch(e){this.emit('NetworkIssue',e);}}
+ async offer(peer){if(peer.offered||this.closed)return;peer.offered=true;
+  try{await peer.pc.setLocalDescription(await peer.pc.createOffer());
+   const retry=(attempt=0)=>{
+    if(this.closed||!this.peers.has(peer.id)||peer.pc.remoteDescription)return;
+    this.signal({to:peer.id,type:'offer',sdp:peer.pc.localDescription});
+    if(attempt<5)setTimeout(()=>retry(attempt+1),1500*(attempt+1));
+   };retry();
+  }catch(e){this.emit('NetworkIssue',e);}}
  async handle(data){
   if(this.closed||!data||data.to&&data.to!==this.id||data.from===this.id)return;
   const peer=this.peers.get(data.from);if(!peer)return;
