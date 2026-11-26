@@ -154,20 +154,8 @@
    const ground=ctx.createLinearGradient(0,h-16,0,h);
    ground.addColorStop(0,'rgba(0,0,0,0)');ground.addColorStop(1,mystic?color(blue,.28*p):color(warm,.27*p));
    ctx.fillStyle=ground;ctx.fillRect(0,h-16,w,16);
-   if(mystic&&p>.25){
-     for(let i=0;i<4;i++){
-       const phase=seconds*.8+i*2.1;
-       if(Math.sin(phase)<.88)continue;
-       const x=(.15+i*.22)*w, y=h*(.42+noise(i+5)*.32),length=w*.075;
-       for(let pass=0;pass<2;pass++){
-         ctx.beginPath();ctx.moveTo(x,y);
-         for(let j=1;j<=8;j++){
-           const f=j/8;ctx.lineTo(x+f*length,y+Math.sin(f*7+phase)*8+Math.sin(f*22+phase*2)*2);
-         }
-         ctx.strokeStyle=pass?color(ice,.55*p):color(violet,.18*p);
-         ctx.lineWidth=pass?.8:3.8;ctx.shadowColor='#91b9ff';ctx.shadowBlur=pass?3:13;ctx.stroke();
-       }ctx.shadowBlur=0;
-     }
+   if(mystic&&p>.25&&window.ZeonEnergyArcs){
+     window.ZeonEnergyArcs.draw(ctx,w,h,t/1000,{variant:'mystic',intensity:Math.min(100,p*100)});
    }
    for(let i=0;i<(mystic?40:55)*p;i++){
      const n=noise(i*9+15),v=(noise(i*11+4)+seconds*(.045+noise(i*5+18)*.09))%1;
