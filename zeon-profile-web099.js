@@ -7,16 +7,86 @@
  const def=()=>({layout:'mosaic',theme:'default',intensity:65,nameFx:'none',nameFont:'default',feature:'',featureFx:'none',featureWord:'',notes:{}});
  const safe=(p)=>({layout:layouts.includes(p?.layout)?p.layout:'mosaic',theme:themes.includes(p?.theme)?p.theme:'default',
   intensity:Math.max(0,Math.min(100,Number(p?.intensity??65)||0)),nameFx:fx.includes(p?.nameFx)?p.nameFx:'none',
-  nameFont:['default','serif','mono','display'].includes(p?.nameFont)?p.nameFont:'default',feature:String(p?.feature||'').slice(0,180),
+  nameFont:['default','modern','serif','mono','soft','display'].includes(p?.nameFont)?p.nameFont:'default',feature:String(p?.feature||'').slice(0,180),
   featureFx:fx.includes(p?.featureFx)?p.featureFx:'none',featureWord:String(p?.featureWord||'').slice(0,48),
   notes:p?.notes&&typeof p.notes==='object'&&!Array.isArray(p.notes)?p.notes:{}});
  let id='',data=def(),draft=null,lastEdit=false,frame=0,tick=0,queued=false;
+ const publicLooks=new Map(),sharedLooks=new Map(),pendingReads=new Set();
+ let currentProfileId='',savingLook=false;
+ const face=v=>['default','modern','serif','mono','soft','display'].includes(v)?v:'default';
+ function fromShared(a){
+  const c=def(),p=a||{},mark=Array.isArray(p.featureMarks)?p.featureMarks[0]:null;
+  c.layout=layouts.includes(p.layout)?p.layout:'mosaic';
+  c.theme=themes.includes(p.theme)?p.theme:'default';
+  c.intensity=Math.max(0,Math.min(100,Number(p.themeIntensity??65)||0));
+  c.nameFont=face(p.nameFont);c.nameFx=fx.includes(p.nameEffect)?p.nameEffect:'none';
+  c.feature=String(p.featureText||p.headline||'').slice(0,180);
+  c.featureWord=String(mark?.text||'').slice(0,48);
+  c.featureFx=fx.includes(mark?.effect)?mark.effect:'none';
+  for(const [key,val] of Object.entries(p.noteStyles||{}).slice(0,16)){
+   const m=Array.isArray(val?.marks)?val.marks[0]:null;
+   if(m?.text&&fx.includes(m.effect))c.notes[key]={text:String(m.text).slice(0,48),effect:m.effect};
+  }
+  return safe(c);
+ }
+ function toShared(c,previous){
+  const p=previous&&typeof previous==='object'?JSON.parse(JSON.stringify(previous)):{};
+  p.schema=1;p.layout=c.layout;p.theme=c.theme;p.themeIntensity=c.intensity;
+  p.nameFont=face(c.nameFont);p.nameEffect=c.nameFx;
+  p.headline=String(p.headline||'').slice(0,90);
+  p.featureText=String(c.feature||'').slice(0,180);
+  p.featureFont=face(p.featureFont);
+  const oldMarks=Array.isArray(p.featureMarks)?p.featureMarks:[];
+  p.featureMarks=c.featureWord&&c.featureFx!=='none'&&c.feature.includes(c.featureWord)
+   ?[{text:c.featureWord,occurrence:0,font:'default',effect:c.featureFx},
+      ...oldMarks.filter(m=>m.text!==c.featureWord).slice(0,5)]
+   :oldMarks.filter(m=>c.feature.includes(m.text));
+  p.noteStyles=p.noteStyles&&typeof p.noteStyles==='object'&&!Array.isArray(p.noteStyles)?p.noteStyles:{};
+  for(const [key,val] of Object.entries(c.notes||{}).slice(0,16)){
+   if(!/^note_[a-z0-9_-]{3,52}$/i.test(key)||!val?.text||!fx.includes(val.effect))continue;
+   const old=p.noteStyles[key]||{},marks=Array.isArray(old.marks)?old.marks:[];
+   p.noteStyles[key]={font:face(old.font),marks:[
+    {text:String(val.text).slice(0,48),occurrence:0,font:'default',effect:val.effect},
+    ...marks.filter(m=>m.text!==val.text).slice(0,5)]};
+  }
+  return p;
+ }
+ function loadShared(userId,owner){
+  if(!userId||pendingReads.has(userId))return;
+  pendingReads.add(userId);
+  void window.desktop.onlineInvoke('profileAppearanceRead',{userId}).then(result=>{
+   if(result?.appearance){
+    sharedLooks.set(userId,result.appearance);
+    const next=fromShared(result.appearance);
+    if(owner&&userId===id){data=next;try{localStorage.setItem(key(),JSON.stringify(next));}catch{}}
+    else publicLooks.set(userId,next);
+   }else if(!owner)publicLooks.set(userId,def());
+   if(currentProfileId===userId)queue();
+  }).catch(err=>{console.warn('[Zeon perfil compartilhado]',err?.message||err);
+   if(!owner)publicLooks.set(userId,def());
+   if(currentProfileId===userId)queue();
+  }).finally(()=>pendingReads.delete(userId));
+ }
+
  const page=()=>{const e=$('#cv-page');return e&&!e.hidden&&$('.cv-full-shell',e)?e:null;};
  const isOwn=p=>$('.cv-page-top strong',p)?.textContent.trim()==='Meu perfil';
  const isEdit=p=>!!$('[data-cv-action="cancel"]',p);
  const key=()=> 'zeon:web-profile:099:'+id;
  function load(){try{return safe(JSON.parse(localStorage.getItem(key())||'null'));}catch{return def();}}
- function persist(){if(!id||!draft)return;try{localStorage.setItem(key(),JSON.stringify(safe(draft)));data=load();}catch{alert('Não foi possível guardar a aparência neste navegador.');}}
+ async function persist(){
+  if(!id||!draft||savingLook)return;
+  const snapshot=safe(JSON.parse(JSON.stringify(draft)));
+  savingLook=true;
+  try{
+   const canonical=toShared(snapshot,sharedLooks.get(id));
+   const result=await window.desktop.onlineInvoke('profileAppearanceSave',{appearance:canonical});
+   sharedLooks.set(id,result?.appearance||canonical);
+   data=fromShared(result?.appearance||canonical);
+   try{localStorage.setItem(key(),JSON.stringify(data));}catch{}
+   queue();
+  }catch(err){window.alert('Não foi possível compartilhar a aparência: '+(err?.message||'Falha no servidor.'));}
+  finally{savingLook=false;}
+ }
  function queue(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;render();});}
  async function session(){try{const s=await window.desktop?.onlineInvoke?.('status');if(s?.loggedIn&&s.userId!==id){id=s.userId;data=load();draft=null;lastEdit=false;queue();}}catch{}}
  const control=(label,kind,k,value,items)=>{const wrap=document.createElement('label');wrap.className='zw-control';wrap.append(document.createTextNode(label));
@@ -30,11 +100,11 @@
   if($('#zw-web-studio',host))return;
   const section=document.createElement('section');section.id='zw-web-studio';section.className='zw-web-studio';
   const header=document.createElement('h3');header.textContent='✦ Estúdio de Perfis · Web';section.append(header);
-  const desc=document.createElement('p');desc.textContent='Prévia 0.9.9: layouts, atmosferas e palavras animadas. A aparência fica neste navegador até a sincronização entre dispositivos estar pronta.';section.append(desc);
+  const desc=document.createElement('p');desc.textContent='Personalize seu perfil. Ao salvar, outros usuários conectados verão este visual.';section.append(desc);
   const grid=document.createElement('div');grid.className='zw-controls';
   grid.append(control('Layout','select','layout',c.layout,[['mosaic','Mosaico'],['classic','Clássico'],['minimal','Minimalista']]),
    control('Atmosfera','select','theme',c.theme,[['default','Original'],['fire-natural','🔥 Chama Natural'],['fire-mystic','✧ Chama Mística']]),
-   control('Intensidade','range','intensity',c.intensity),control('Fonte do nome','select','nameFont',c.nameFont,[['default','Zeon'],['serif','Editorial'],['mono','Digital'],['display','Impactante']]),
+   control('Intensidade','range','intensity',c.intensity),control('Fonte do nome','select','nameFont',c.nameFont,[['default','Zeon'],['modern','Moderna'],['serif','Editorial'],['mono','Digital'],['soft','Delicada'],['display','Impactante']]),
    control('Efeito do nome','select','nameFx',c.nameFx,[['none','Nenhum'],['fire','Chamas'],['bloom','Natureza'],['ice','Gelo'],['electric','Eletricidade']]),
    control('Efeito da frase','select','featureFx',c.featureFx,[['none','Nenhum'],['fire','Chamas'],['bloom','Natureza'],['ice','Gelo'],['electric','Eletricidade']]));
   section.append(grid,control('Frase em destaque','textarea','feature',c.feature));
@@ -67,12 +137,19 @@
   $$('.zw-flames,.zw-embers',p).forEach(x=>x.remove());return;}
   if(banner&&!$('.zw-flames',banner)){const v=document.createElement('canvas');v.className='zw-flames';v.setAttribute('aria-hidden','true');banner.append(v);}
   if(scroll&&!$('.zw-embers',scroll)){const v=document.createElement('canvas');v.className='zw-embers';v.setAttribute('aria-hidden','true');scroll.prepend(v);}}
- function render(){const p=page();if(!p){lastEdit=false;draft=null;return;}if(!id&&isOwn(p))void session();
+ function render(){const p=page();if(!p){lastEdit=false;draft=null;currentProfileId='';return;}if(!id&&isOwn(p))void session();
    const shell=$('.cv-full-shell',p),stage=$('.cv-profile-stage',p);if(!stage)return;
    const own=isOwn(p),edit=own&&isEdit(p);
    if(edit&&!lastEdit)draft=JSON.parse(JSON.stringify(data));
    if(!edit&&lastEdit)draft=null;
-   lastEdit=edit;const c=own?(edit&&draft?draft:data):def();
+   lastEdit=edit;
+  const userId=$('.cv-full-shell',p)?.dataset.cvUserId||'';
+  if(userId&&userId!==currentProfileId){
+   currentProfileId=userId;
+   if(!own)publicLooks.delete(userId);
+   loadShared(userId,own);
+  }
+  const c=own?(edit&&draft?draft:data):(publicLooks.get(userId)||def());
    shell.classList.add('zw-profile-web');shell.dataset.zwTheme=c.theme;shell.dataset.zwIntensity=c.intensity;stage.dataset.zwLayout=c.layout;
    const identity=$('.cv-identity',p);if(identity)identity.dataset.zwFont=c.nameFont;
    const hero=$('.cv-hero',p);if(hero&&!$('.zw-pill',hero)){const pill=document.createElement('span');pill.className='zw-pill';pill.textContent=own?'✦ MEU ESPAÇO':'✦ ESPAÇO PESSOAL';$('.cv-banner',hero)?.append(pill);}
@@ -187,14 +264,14 @@
  document.addEventListener('input',e=>{const el=e.target;if(!draft||!el.matches?.('[data-zw-field]'))return;draft[el.dataset.zwField]=el.dataset.zwField==='intensity'?Number(el.value):el.value;});
  document.addEventListener('change',e=>{if(e.target.matches?.('[data-zw-field]'))queue();});
  document.addEventListener('click',e=>{const b=e.target.closest('[data-zw-action]');if(!b||!draft)return;const p=page();if(!p||!isOwn(p)||!isEdit(p))return;
-   const action=b.dataset.zwAction;if(action==='save'){persist();queue();return;}
+   const action=b.dataset.zwAction;if(action==='save'){void persist();return;}
    if(action==='mark-feature'){const area=$('#zw-web-studio textarea',p);const val=area?.value||'',word=val.slice(area.selectionStart,area.selectionEnd);if(word&&word.length<=48&&!word.includes('\n')&&draft.featureFx!=='none'){draft.featureWord=word;queue();}return;}
    if(action==='mark-note'){const row=b.closest('.zw-note-fx'),card=$$('[data-card]',p).find(x=>x.dataset.card===row?.dataset.card),ta=card&&$('textarea[data-cv-field="body"]',card);
       const txt=ta?.value.slice(ta.selectionStart,ta.selectionEnd);if(txt&&txt.length<=48&&!txt.includes('\n')){draft.notes[row.dataset.card]={text:txt,effect:$('select',row)?.value||'fire'};queue();}}
  },true);
  document.addEventListener('click',e=>{const action=e.target.closest('[data-cv-action]')?.dataset.cvAction;
   if(action==='cancel'||action==='back'||action==='signout'){draft=null;lastEdit=false;}
-  if(action==='save'&&draft)persist();
+  if(action==='save'&&draft)void persist();
  },true);
  new MutationObserver(m=>{if(m.some(x=>x.type==='childList'))queue();}).observe(document.body,{childList:true,subtree:true});
  const gate=$('#authGate');if(gate)new MutationObserver(()=>void session()).observe(gate,{attributes:true,attributeFilter:['hidden']});

@@ -113,7 +113,35 @@
     return {id:uid,handle,display_name,bio,accent_color,secondary_color,effect,effect_intensity,avatar_frame,avatar_decoration,
       avatar_path:mediaPath(data.avatar_path,'avatar'),banner_path:mediaPath(data.banner_path,'banner'),profile_cards:cards,updated_at:new Date().toISOString()};
   }
-  async function uploadProfileImage(args){
+  // Visible profile presentation only. Validate independently of the UI.
+  function cleanAppearance(source){
+    const s=source&&typeof source==='object'&&!Array.isArray(source)?source:{};
+    const fonts=new Set(['default','modern','serif','mono','soft','display']);
+    const effects=new Set(['none','fire','ice','magic','electric','bloom']);
+    const layouts=new Set(['mosaic','classic','minimal']);
+    const themes=new Set(['default','fire-natural','fire-mystic']);
+    const allow=(val,values,fallback)=>values.has(val)?val:fallback;
+    const take=(val,n)=>String(val??'').slice(0,n);
+    const strength=Number.isFinite(Number(s.themeIntensity))?Math.max(0,Math.min(100,Math.round(Number(s.themeIntensity)))):68;
+    const marks=(input)=>(Array.isArray(input)?input:[]).slice(0,6).map(x=>({
+      text:take(x?.text,48),occurrence:Math.max(0,Math.min(30,Math.trunc(Number(x?.occurrence)||0))),
+      font:allow(x?.font,fonts,'default'),effect:allow(x?.effect,effects,'none')
+    })).filter(x=>x.text.trim()&&x.effect!=='none');
+    const notes={};
+    if(s.noteStyles&&typeof s.noteStyles==='object'&&!Array.isArray(s.noteStyles)){
+      for(const [key,note] of Object.entries(s.noteStyles).slice(0,16)){
+        if(!/^note_[a-z0-9_-]{3,52}$/i.test(key))continue;
+        const font=allow(note?.font,fonts,'default'),m=marks(note?.marks);
+        if(font!=='default'||m.length)notes[key]={font,marks:m};
+      }
+    }
+    return {schema:1,layout:allow(s.layout,layouts,'mosaic'),headline:take(s.headline,90),
+      theme:allow(s.theme,themes,'default'),themeIntensity:strength,
+      nameFont:allow(s.nameFont,fonts,'default'),nameEffect:allow(s.nameEffect,effects,'none'),
+      featureText:take(s.featureText,180),featureFont:allow(s.featureFont,fonts,'default'),
+      featureMarks:marks(s.featureMarks),noteStyles:notes};
+  }
+    async function uploadProfileImage(args){
     await ensureSession();
     const kind=['avatar','banner'].includes(args.kind)?args.kind:null;
     const mime=String(args.mime||''),ext={'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/gif':'gif'}[mime];
@@ -193,6 +221,21 @@
       const found=await request('/rest/v1/channels?select=id&type=eq.voice&id=eq.'+encodeURIComponent(id),{authorize:true});
       if(!found?.length)throw Error('Você não tem acesso a este canal de voz.');
       return {url:config.url,key:config.key,accessToken:session.access_token,userId:session.user.id};
+    }
+    if(command==='profileAppearanceRead'){
+      await ensureSession();
+      const uid=requireUUID(arg.userId,'Usuário');
+      const rows=await request('/rest/v1/zeon_profile_appearances?select=appearance,updated_at&user_id=eq.'+encodeURIComponent(uid)+'&limit=1',{authorize:true});
+      return {appearance:rows?.[0]?.appearance?cleanAppearance(rows[0].appearance):null,updatedAt:rows?.[0]?.updated_at||null};
+    }
+    if(command==='profileAppearanceSave'){
+      await ensureSession();
+      const appearance=cleanAppearance(arg.appearance);
+      const rows=await request('/rest/v1/zeon_profile_appearances?on_conflict=user_id&select=appearance,updated_at',{
+        method:'POST',authorize:true,headers:{Prefer:'resolution=merge-duplicates,return=representation'},
+        body:{user_id:session.user.id,appearance,updated_at:new Date().toISOString()}
+      });
+      return {appearance:rows?.[0]?.appearance?cleanAppearance(rows[0].appearance):appearance,updatedAt:rows?.[0]?.updated_at||null};
     }
     if(command==='profileMine'){
       await ensureSession();const rows=await request('/rest/v1/consivo_profiles?select=*&id=eq.'+encodeURIComponent(session.user.id)+'&limit=1',{authorize:true});

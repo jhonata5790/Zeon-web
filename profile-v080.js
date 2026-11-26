@@ -260,7 +260,7 @@
     const own=pageId===myId,p=norm(editing?draft:openProfile);
     if(!openProfile){h.innerHTML='<div class="cv-empty"><button data-cv-action="back">Voltar</button>Perfil não configurado.</div>';return;}
     const previous=scrollTop??$('#cv-page .cv-profile-scroll')?.scrollTop??0;
-    h.innerHTML=`<div class="cv-full-shell ${editing?'cv-editing':''}">
+    h.innerHTML=`<div data-cv-user-id="${esc(pageId)}" class="cv-full-shell ${editing?'cv-editing':''}">
       <header class="cv-page-top"><button class="cv-icon" data-cv-action="back" title="Voltar">←</button><strong>${own?'Meu perfil':'Perfil'}</strong>
         <div class="cv-top-actions">${own?editing?`<button class="cv-save" data-cv-action="save" disabled>✓ Salvar</button><button class="cv-cancel" data-cv-action="cancel">Cancelar</button>`:
         `<button class="cv-edit-main" data-cv-action="edit" title="Editar perfil" aria-label="Editar perfil">✎</button>`:`<button class="cv-save" data-cv-action="message" data-id="${esc(pageId)}">✉ Mensagem</button>`}</div>
