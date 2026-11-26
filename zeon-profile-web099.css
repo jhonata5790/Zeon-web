@@ -156,3 +156,15 @@
   #cv-page .zw-profile-web .cv-avatar-wrap,#cv-page .zw-profile-web .cv-avatar{width:74px;height:74px}
   #cv-page .zw-profile-web .cv-avatar-wrap{margin-top:-49px}
 }
+
+/* Keep Classic responsive as well as Mosaic; the desktop layout must not overflow a phone. */
+@media(max-width:950px) and (min-width:621px){
+  #cv-page .zw-profile-web .cv-profile-stage[data-zw-layout="classic"] .cv-card-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #cv-page .zw-profile-web .cv-profile-stage[data-zw-layout="classic"] .cv-card[data-card="bio"],
+  #cv-page .zw-profile-web .cv-profile-stage[data-zw-layout="classic"] .cv-card.cv-note{grid-column:span 2}
+  #cv-page .zw-profile-web .cv-profile-stage[data-zw-layout="classic"] .cv-card:not([data-card="bio"]):not(.cv-note){grid-column:span 1}
+}
+@media(max-width:620px){
+  #cv-page .zw-profile-web .cv-profile-stage[data-zw-layout="classic"] .cv-card-grid{grid-template-columns:minmax(0,1fr)}
+  #cv-page .zw-profile-web .cv-profile-stage[data-zw-layout="classic"] .cv-card{grid-column:1!important}
+}
