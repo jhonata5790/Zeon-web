@@ -12,7 +12,7 @@
   notes:p?.notes&&typeof p.notes==='object'&&!Array.isArray(p.notes)?p.notes:{}});
  let id='',data=def(),draft=null,lastEdit=false,frame=0,tick=0,queued=false;
  const publicLooks=new Map(),sharedLooks=new Map(),pendingReads=new Set();
- let currentProfileId='',savingLook=false;
+ let currentProfileId='',savingLook=false,publishState='',publishError=false;
  const face=v=>['default','modern','serif','mono','soft','display'].includes(v)?v:'default';
  function fromShared(a){
   const c=def(),p=a||{},mark=Array.isArray(p.featureMarks)?p.featureMarks[0]:null;
@@ -73,19 +73,29 @@
  const isEdit=p=>!!$('[data-cv-action="cancel"]',p);
  const key=()=> 'zeon:web-profile:099:'+id;
  function load(){try{return safe(JSON.parse(localStorage.getItem(key())||'null'));}catch{return def();}}
- async function persist(){
-  if(!id||!draft||savingLook)return;
-  const snapshot=safe(JSON.parse(JSON.stringify(draft)));
-  savingLook=true;
+ async function persist(explicit=null){
+  const selected=explicit||draft;
+  if(!id||!selected||savingLook)return;
+  const snapshot=safe(JSON.parse(JSON.stringify(selected)));
+  savingLook=true;publishError=false;publishState='Publicando no Zeon…';queue();
   try{
    const canonical=toShared(snapshot,sharedLooks.get(id));
    const result=await window.desktop.onlineInvoke('profileAppearanceSave',{appearance:canonical});
-   sharedLooks.set(id,result?.appearance||canonical);
-   data=fromShared(result?.appearance||canonical);
+   if(!result?.published||!result?.appearance)throw Error('Não houve confirmação do servidor.');
+   const verification=await window.desktop.onlineInvoke('profileAppearanceRead',{userId:id});
+   if(!verification?.appearance)throw Error('Não foi possível ler o perfil publicado.');
+   const compare=(a,b)=>JSON.stringify([a.theme,a.themeIntensity,a.layout,a.nameFont,a.nameEffect,a.featureText])===
+        JSON.stringify([b.theme,b.themeIntensity,b.layout,b.nameFont,b.nameEffect,b.featureText]);
+   if(!compare(verification.appearance,canonical))throw Error('A aparência retornada é diferente da enviada.');
+   sharedLooks.set(id,verification.appearance);
+   data=fromShared(verification.appearance);
    try{localStorage.setItem(key(),JSON.stringify(data));}catch{}
-   queue();
-  }catch(err){window.alert('Não foi possível compartilhar a aparência: '+(err?.message||'Falha no servidor.'));}
-  finally{savingLook=false;}
+   publishState='Aparência publicada e confirmada no Supabase!';publishError=false;
+  }catch(err){
+   publishState='Falha ao publicar: '+(err?.message||'Erro desconhecido');
+   publishError=true;
+   console.warn('[Zeon publicar aparência]',err);
+  }finally{savingLook=false;queue();}
  }
  function queue(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;render();});}
  async function session(){try{const s=await window.desktop?.onlineInvoke?.('status');if(s?.loggedIn&&s.userId!==id){id=s.userId;data=sharedLooks.has(id)?fromShared(sharedLooks.get(id)):load();draft=null;lastEdit=false;queue();}}catch{}}
@@ -153,8 +163,23 @@
    shell.classList.add('zw-profile-web');shell.dataset.zwTheme=c.theme;shell.dataset.zwIntensity=c.intensity;stage.dataset.zwLayout=c.layout;
    const identity=$('.cv-identity',p);if(identity)identity.dataset.zwFont=c.nameFont;
    const hero=$('.cv-hero',p);if(hero&&!$('.zw-pill',hero)){const pill=document.createElement('span');pill.className='zw-pill';pill.textContent=own?'✦ MEU ESPAÇO':'✦ ESPAÇO PESSOAL';$('.cv-banner',hero)?.append(pill);}
-   if(own){titleFx(p,c);featureFx(p,c);notesFx(p,c);}
+   titleFx(p,c);featureFx(p,c);notesFx(p,c);
    if(edit){studio(stage,c);noteEdit(p);}else $('#zw-web-studio',p)?.remove();
+   if(own&&!edit){
+     if(!$('.zw-publication-controls',stage)){
+       const bar=document.createElement('div');bar.className='zw-publication-controls';
+       bar.append(button('↥ Publicar aparência','publish-view'));
+       const message=document.createElement('span');message.className='zw-publication-message';message.setAttribute('role','status');bar.append(message);
+       $('.cv-hero',stage)?.after(bar);
+     }
+   }else $('.zw-publication-controls',stage)?.remove();
+   const message=$('.zw-publication-message',stage);
+   if(message){message.textContent=publishState||'Compartilhe o visual do perfil com outros usuários.';message.classList.toggle('error',publishError);}
+   const studioFeedback=$('#zw-web-studio',stage);
+   if(studioFeedback){let status=$('.zw-studio-publication-status',studioFeedback);
+     if(!status){status=document.createElement('small');status.className='zw-studio-publication-status';status.setAttribute('role','status');studioFeedback.append(status);}
+     status.textContent=publishState||'';status.classList.toggle('error',publishError);
+   }
     const cards=$('#cv-card-grid',stage);
     if(cards&&!$('.zw-section-head',stage)){
       const heading=document.createElement('div');heading.className='zw-section-head';
@@ -269,8 +294,8 @@
  }
  document.addEventListener('input',e=>{const el=e.target;if(!draft||!el.matches?.('[data-zw-field]'))return;draft[el.dataset.zwField]=el.dataset.zwField==='intensity'?Number(el.value):el.value;});
  document.addEventListener('change',e=>{if(e.target.matches?.('[data-zw-field]'))queue();});
- document.addEventListener('click',e=>{const b=e.target.closest('[data-zw-action]');if(!b||!draft)return;const p=page();if(!p||!isOwn(p)||!isEdit(p))return;
-   const action=b.dataset.zwAction;if(action==='save'){void persist();return;}
+ document.addEventListener('click',e=>{const b=e.target.closest('[data-zw-action]');if(!b)return;const p=page();if(!p||!isOwn(p))return;const action=b.dataset.zwAction; if(action==='publish-view'&&!isEdit(p)){void persist(data);return;}if(!draft||!isEdit(p))return;
+   if(action==='save'){void persist();return;}
    if(action==='mark-feature'){const area=$('#zw-web-studio textarea',p);const val=area?.value||'',word=val.slice(area.selectionStart,area.selectionEnd);if(word&&word.length<=48&&!word.includes('\n')&&draft.featureFx!=='none'){draft.featureWord=word;queue();}return;}
    if(action==='mark-note'){const row=b.closest('.zw-note-fx'),card=$$('[data-card]',p).find(x=>x.dataset.card===row?.dataset.card),ta=card&&$('textarea[data-cv-field="body"]',card);
       const txt=ta?.value.slice(ta.selectionStart,ta.selectionEnd);if(txt&&txt.length<=48&&!txt.includes('\n')){draft.notes[row.dataset.card]={text:txt,effect:$('select',row)?.value||'fire'};queue();}}

@@ -235,7 +235,12 @@
         method:'POST',authorize:true,headers:{Prefer:'resolution=merge-duplicates,return=representation'},
         body:{user_id:session.user.id,appearance,updated_at:new Date().toISOString()}
       });
-      return {appearance:rows?.[0]?.appearance?cleanAppearance(rows[0].appearance):appearance,updatedAt:rows?.[0]?.updated_at||null};
+      if(!Array.isArray(rows)||!rows.length||!rows[0]?.appearance)
+        throw Error('O Supabase não confirmou a publicação da aparência.');
+      // Verify the saved row using the same read-only API as profile visitors.
+      const verified=await request('/rest/v1/zeon_profile_appearances?select=appearance,updated_at&user_id=eq.'+encodeURIComponent(session.user.id)+'&limit=1',{authorize:true});
+      if(!verified?.[0]?.appearance)throw Error('Não foi possível consultar a aparência após publicar.');
+      return {published:true,appearance:cleanAppearance(verified[0].appearance),updatedAt:verified[0].updated_at||null};
     }
     if(command==='profileMine'){
       await ensureSession();const rows=await request('/rest/v1/consivo_profiles?select=*&id=eq.'+encodeURIComponent(session.user.id)+'&limit=1',{authorize:true});
