@@ -3,7 +3,7 @@
    sem migração de banco nem mudanças nas chamadas P2P. */
 (() => {
  const $=(q,b=document)=>b.querySelector(q), $$=(q,b=document)=>Array.from(b.querySelectorAll(q));
- const layouts=['mosaic','classic','minimal'],themes=['default','fire-natural','fire-mystic'],fx=['none','fire','bloom','ice','electric'];
+ const layouts=['mosaic','classic','minimal'],themes=['default','fire-natural','fire-mystic'],fx=['none','fire','bloom','ice','electric','magic'];
  const def=()=>({layout:'mosaic',theme:'default',intensity:65,nameFx:'none',nameFont:'default',feature:'',featureFx:'none',featureWord:'',notes:{}});
  const safe=(p)=>({layout:layouts.includes(p?.layout)?p.layout:'mosaic',theme:themes.includes(p?.theme)?p.theme:'default',
   intensity:Math.max(0,Math.min(100,Number(p?.intensity??65)||0)),nameFx:fx.includes(p?.nameFx)?p.nameFx:'none',
@@ -58,7 +58,7 @@
    if(result?.appearance){
     sharedLooks.set(userId,result.appearance);
     const next=fromShared(result.appearance);
-    if(owner&&userId===id){data=next;try{localStorage.setItem(key(),JSON.stringify(next));}catch{}}
+    if(owner){data=next;if(userId===id)try{localStorage.setItem(key(),JSON.stringify(next));}catch{}}
     else publicLooks.set(userId,next);
    }else if(!owner)publicLooks.set(userId,def());
    if(currentProfileId===userId)queue();
@@ -88,7 +88,7 @@
   finally{savingLook=false;}
  }
  function queue(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;render();});}
- async function session(){try{const s=await window.desktop?.onlineInvoke?.('status');if(s?.loggedIn&&s.userId!==id){id=s.userId;data=load();draft=null;lastEdit=false;queue();}}catch{}}
+ async function session(){try{const s=await window.desktop?.onlineInvoke?.('status');if(s?.loggedIn&&s.userId!==id){id=s.userId;data=sharedLooks.has(id)?fromShared(sharedLooks.get(id)):load();draft=null;lastEdit=false;queue();}}catch{}}
  const control=(label,kind,k,value,items)=>{const wrap=document.createElement('label');wrap.className='zw-control';wrap.append(document.createTextNode(label));
   const el=document.createElement(kind==='textarea'?'textarea':kind==='range'?'input':'select');el.dataset.zwField=k;
   if(kind==='range'){el.type='range';el.min='0';el.max='100';el.step='5';el.value=value;}
@@ -105,8 +105,8 @@
   grid.append(control('Layout','select','layout',c.layout,[['mosaic','Mosaico'],['classic','Clássico'],['minimal','Minimalista']]),
    control('Atmosfera','select','theme',c.theme,[['default','Original'],['fire-natural','🔥 Chama Natural'],['fire-mystic','✧ Chama Mística']]),
    control('Intensidade','range','intensity',c.intensity),control('Fonte do nome','select','nameFont',c.nameFont,[['default','Zeon'],['modern','Moderna'],['serif','Editorial'],['mono','Digital'],['soft','Delicada'],['display','Impactante']]),
-   control('Efeito do nome','select','nameFx',c.nameFx,[['none','Nenhum'],['fire','Chamas'],['bloom','Natureza'],['ice','Gelo'],['electric','Eletricidade']]),
-   control('Efeito da frase','select','featureFx',c.featureFx,[['none','Nenhum'],['fire','Chamas'],['bloom','Natureza'],['ice','Gelo'],['electric','Eletricidade']]));
+   control('Efeito do nome','select','nameFx',c.nameFx,[['none','Nenhum'],['fire','Chamas'],['bloom','Natureza'],['ice','Gelo'],['electric','Eletricidade'],['magic','Magia']]),
+   control('Efeito da frase','select','featureFx',c.featureFx,[['none','Nenhum'],['fire','Chamas'],['bloom','Natureza'],['ice','Gelo'],['electric','Eletricidade'],['magic','Magia']]));
   section.append(grid,control('Frase em destaque','textarea','feature',c.feature));
   const line=document.createElement('div');line.className='zw-actions';line.append(button('Aplicar efeito à seleção da frase','mark-feature'),button('Salvar aparência','save'));section.append(line);
   const note=document.createElement('small');note.textContent='Foto, banner e cards continuam sendo salvos pelo botão principal do editor.';section.append(note);
@@ -247,7 +247,7 @@
   function embers(c,t,mystic,level){const obj=canvas(c);if(!obj)return;const {ctx,w,h}=obj;for(let i=0;i<30*level/100;i++){const x=(Math.sin(i*117)*.5+.5)*w,y=h-(i*41+t*.01*(1+i%3))%h;
    ctx.fillStyle=mystic?'rgba(169,155,255,.30)':'rgba(255,163,87,.30)';ctx.beginPath();ctx.arc(x+Math.sin(t*.0007+i)*15,y,1.5,0,7);ctx.fill();}}
  function word(c,t){const span=c.parentElement;if(!span)return;const obj=canvas(c),txt=span.firstChild?.nodeValue||'';if(!obj||!txt)return;const {ctx,w,h}=obj,s=getComputedStyle(span),size=parseFloat(s.fontSize)||16,eff=span.dataset.zwFx;
-   const color=eff==='fire'?'#FFCD90':eff==='bloom'?'#BDF0A7':eff==='ice'?'#B8EFFF':'#C7CAFF';
+   const color=eff==='fire'?'#FFCD90':eff==='bloom'?'#BDF0A7':eff==='ice'?'#B8EFFF':eff==='magic'?'#EED5FF':'#C7CAFF';
    ctx.fillStyle=color;ctx.shadowBlur=5;ctx.shadowColor=eff==='fire'?'#FF7934':eff==='bloom'?'#5FCB69':'#94B9FF';
    ctx.font=s.fontWeight+' '+size+'px '+s.fontFamily;ctx.textBaseline='alphabetic';ctx.fillText(txt,11,11+size*.88);ctx.shadowBlur=0;
    for(let i=0;i<Math.min(18,w/13);i++){const x=11+i*(w-22)/Math.min(18,w/13),y=11+size*.2;
@@ -255,7 +255,13 @@
        ctx.beginPath();ctx.moveTo(x-4,y+10);ctx.quadraticCurveTo(x-6,y-height*.3,x+Math.sin(t*.003+i)*4,y-height);ctx.quadraticCurveTo(x+6,y-height*.2,x+4,y+10);ctx.fill();}
      else if(eff==='bloom'){ctx.save();ctx.translate(x+Math.sin(t*.002+i)*4,y);ctx.rotate(t*.0002+i);ctx.fillStyle='#A5E99B';
        for(let j=0;j<4;j++){ctx.rotate(Math.PI/2);ctx.beginPath();ctx.ellipse(3,0,3,1.1,0,0,7);ctx.fill();}ctx.restore();}
-     else{ctx.strokeStyle=eff==='ice'?'#9BE5FF':'#D0B6FF';ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+Math.sin(t*.005+i)*4,y-6);ctx.stroke();}
+     else if(eff==='magic'){
+       ctx.save();ctx.translate(x,y);ctx.rotate(t*.0003+i);
+       ctx.strokeStyle='#DFABFF';ctx.lineWidth=1.1;
+       ctx.beginPath();ctx.moveTo(-4,0);ctx.lineTo(4,0);
+       ctx.moveTo(0,-4);ctx.lineTo(0,4);ctx.stroke();ctx.restore();
+      }
+      else{ctx.strokeStyle=eff==='ice'?'#9BE5FF':'#D0B6FF';ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+Math.sin(t*.005+i)*4,y-6);ctx.stroke();}
    }}
  function paint(t){frame=requestAnimationFrame(paint);if(document.hidden||t-tick<35)return;tick=t;const p=page();if(!p)return;const shell=$('.cv-full-shell',p),theme=shell?.dataset.zwTheme,level=Number(shell?.dataset.zwIntensity)||0;
   if(!matchMedia('(prefers-reduced-motion: reduce)').matches){if(theme!=='default'){const b=$('.zw-flames',p),a=$('.zw-embers',p);if(b)flames(b,t,theme,level);if(a)embers(a,t,theme==='fire-mystic',level);}
