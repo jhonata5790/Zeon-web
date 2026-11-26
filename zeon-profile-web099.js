@@ -106,6 +106,8 @@
    const baseY=h-2;
    glow(w*.28,h*.94,w*.36,mystic?violet:warm,.14*p);
    glow(w*.73,h*.97,w*.39,mystic?blue:gold,.13*p);
+   // One continuous, animated fire bed runs from the first to the last pixel.
+   if(mystic&&window.ZeonMysticSurface)window.ZeonMysticSurface.draw(ctx,w,h,seconds,level);
    const count=mystic?Math.min(23,Math.max(13,Math.round(w/64))):Math.min(53,Math.max(26,Math.round(w/26)));
    const layers=mystic?1:3;
    for(let layer=0;layer<layers;layer++)for(let i=0;i<count;i++){
