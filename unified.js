@@ -318,7 +318,9 @@ async function setMedia(kind){const room=S.room;if(!room||S.busy)return;S.busy=t
 async function openPicker(){if(!S.room)return;
  if(window.desktop?.isWeb){
   if(!navigator.mediaDevices?.getDisplayMedia)throw Error('Seu navegador não oferece compartilhamento de tela.');
-  await S.room.localParticipant.setScreenShareEnabled(true);
+  const dim=shareQual?.PROFILES?.[prefs.shareResolution]||{width:1280,height:720};
+  const fps=[15,30,60].includes(Number(prefs.shareFps))?Number(prefs.shareFps):30;
+  await S.room.localParticipant.setScreenShareEnabled(true,{resolution:{width:dim.width,height:dim.height,frameRate:fps},contentHint:'motion'});
   return;
  }
  S.sources=await window.desktop.listCaptureSources();S.source=null;S.sourceKind='screen';
