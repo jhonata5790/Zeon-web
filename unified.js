@@ -112,6 +112,8 @@ function participants(){return S.room?[S.room.localParticipant,...S.room.remoteP
 function personLabel(p){return p===S.room?.localParticipant?displayName():(p.name||p.identity||'Participante');}
 function stageSource(){if(!S.room)return null;for(const p of participants()){
  const t=sourceTrack(p,'ScreenShare');if(t)return {person:p,track:t};}return null;}
+// Read-only access for the new desktop and mobile viewer monitor.
+window.ZeonViewerMonitorContext=()=>({room:S.room,share:stageSource(),video:document.querySelector('#callSharedScreen')});
 // Monitor de recepção: rede, decodificação e reprodução não são a mesma coisa.
 let zeonReceptionEpoch=0;
 setInterval(async()=>{

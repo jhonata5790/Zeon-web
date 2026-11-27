@@ -188,7 +188,12 @@ class Room{
    try{
     const reports=await (typeof tr?.receiver?.getStats==='function'?tr.receiver.getStats():peer.pc.getStats());
     let inbound;reports.forEach(v=>{if(v.type==='inbound-rtp'&&!v.isRemote&&(v.kind||v.mediaType)==='video'&&(!inbound||v.mid===tr?.mid||v.trackIdentifier===media?.id))inbound=v;});
-    if(inbound){h.framesDecoded=inbound.framesDecoded??null;h.bytesReceived=inbound.bytesReceived??null;h.packetsReceived=inbound.packetsReceived??null;}
+    if(inbound){h.framesDecoded=inbound.framesDecoded??null;h.bytesReceived=inbound.bytesReceived??null;h.packetsReceived=inbound.packetsReceived??null;
+    h.framesReceived=inbound.framesReceived??null;h.packetsLost=inbound.packetsLost??null;
+    h.frameWidth=inbound.frameWidth??null;h.frameHeight=inbound.frameHeight??null;
+    h.jitter=inbound.jitter??null;h.jitterBufferDelay=inbound.jitterBufferDelay??null;
+    h.jitterBufferEmittedCount=inbound.jitterBufferEmittedCount??null;
+    h.totalDecodeTime=inbound.totalDecodeTime??null;}
    }catch{}
    return h;
   }
