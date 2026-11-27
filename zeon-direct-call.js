@@ -18,8 +18,36 @@ function publication(media,source,senders){
 }
 function codecPreference(){try{const v=localStorage.getItem('zeon-screen-codec-v2');return ['H264','VP8','VP9'].includes(v)?v:'auto';}catch{return 'auto';}}
 function preferScreenCodec(t,codec){if(codec==='auto')return 'auto';try{const all=globalThis.RTCRtpReceiver?.getCapabilities('video')?.codecs||[];const best=all.filter(x=>x.mimeType?.toLowerCase()===('video/'+codec).toLowerCase());if(!best.length||typeof t?.setCodecPreferences!=='function')return 'unsupported';t.setCodecPreferences([...best,...all.filter(x=>!best.includes(x))]);return 'preferred';}catch{return 'rejected';}}
+// Fase 4: keep WebRTC congestion control; set caps only on screen video.
+const encodingQueues=new WeakMap();
+function screenConfig(capture,encoding,track){
+ const st=track.getSettings?.()||{},res=capture.resolution||{},fps=[15,30,60].includes(Number(res.frameRate))?Number(res.frameRate):30;
+ const w=Number(res.width)||Number(st.width)||1280,h=Number(res.height)||Number(st.height)||720;
+ const e=encoding?.screenShareEncoding||{};
+ const maxBitrate=Number.isFinite(e.maxBitrate)?Math.max(250000,Math.min(16000000,e.maxBitrate)):Math.max(1000000,Math.min(16000000,Math.round(w*h*fps*.10/100000)*100000));
+ const preference=['balanced','maintain-resolution','maintain-framerate'].includes(encoding?.degradationPreference)?encoding.degradationPreference:'balanced';
+ return {maxBitrate,maxFramerate:fps,preference};
+}
+async function applyScreen(sender,cfg,valid){
+ if(!sender?.getParameters||!sender?.setParameters)return 'unsupported';
+ const task=(encodingQueues.get(sender)||Promise.resolve()).catch(()=>{}).then(async()=>{
+  if(!valid())return 'canceled';
+  try{
+   let p=sender.getParameters();if(!p.encodings?.length)return 'deferred';
+   p.encodings=p.encodings.map(e=>({...e,maxBitrate:cfg.maxBitrate,maxFramerate:cfg.maxFramerate}));p.degradationPreference=cfg.preference;
+   try{await sender.setParameters(p);}catch{
+    if(!valid())return 'canceled';p=sender.getParameters();if(!p.encodings?.length)return 'deferred';
+    p.encodings=p.encodings.map(e=>({...e,maxBitrate:cfg.maxBitrate,maxFramerate:cfg.maxFramerate}));await sender.setParameters(p);
+   }
+   const a=sender.getParameters();return a.encodings?.every(e=>e.maxBitrate===cfg.maxBitrate&&e.maxFramerate===cfg.maxFramerate)?'applied':'unverified';
+  }catch{return 'rejected';}
+ });
+ encodingQueues.set(sender,task);return task;
+}
 class Room{
- constructor(){this.localParticipant=null;this.remoteParticipants=new Map();this.activeSpeakers=[];this.listeners=new Map();this.peers=new Map();this.media=new Map();this.connected=false;this.closed=true;this.socket=null;this.counter=0;this.joinRef=null;this.timer=null;this.tokenTimer=null;this.id=null;this.topic=null;this.qualityCodec=codecPreference();}
+ constructor(){this.localParticipant=null;this.remoteParticipants=new Map();this.activeSpeakers=[];this.listeners=new Map();this.peers=new Map();this.media=new Map();this.connected=false;this.closed=true;this.socket=null;this.counter=0;this.joinRef=null;this.timer=null;this.tokenTimer=null;this.id=null;this.topic=null;this.qualityCodec=codecPreference();this.screenEncoding=null;}
+ getEncodingEngineStatus(){return {mode:'web-balanced',configuration:this.screenEncoding,peers:[...this.peers.values()].map(p=>p.screenEncodingStatus||'deferred')};}
+ async applyScreenPeer(peer){const cfg=this.screenEncoding,track=this.media.get(Source.ScreenShare),sender=peer?.transceivers?.[2]?.sender;if(!cfg||!track||!sender)return;const valid=()=>this.peers.get(peer.id)===peer&&this.screenEncoding===cfg&&this.media.get(Source.ScreenShare)===track&&sender.track===track;const status=await applyScreen(sender,cfg,valid);if(valid())peer.screenEncodingStatus=status;}
  getScreenQualityExperiment(){return {codecPreference:this.qualityCodec,peers:[...this.peers.values()].map(p=>p.qualityCodecStatus||'auto')};}
  on(ev,cb){if(!this.listeners.has(ev))this.listeners.set(ev,new Set());this.listeners.get(ev).add(cb);return this;}
  off(ev,cb){this.listeners.get(ev)?.delete(cb);return this;}
@@ -42,13 +70,13 @@ class Room{
     try{await this.publish(Source.Camera,stream.getVideoTracks()[0]);}catch(e){stream.getTracks().forEach(t=>t.stop());throw e;}
    },
    setScreenShareEnabled:async(on,capture={},encoding={})=>{
-    if(!on){await this.remove(Source.ScreenShareAudio);await this.remove(Source.ScreenShare);return;}
+    if(!on){this.screenEncoding=null;await this.remove(Source.ScreenShareAudio);await this.remove(Source.ScreenShare);return;}
     if(p.isScreenShareEnabled)return;
     const res=capture?.resolution||{},video={};
     if(res.width)video.width={ideal:res.width};if(res.height)video.height={ideal:res.height};if(res.frameRate)video.frameRate=res.frameRate;
     const stream=await navigator.mediaDevices.getDisplayMedia({video,audio:!!capture.audio});
     try{const v=stream.getVideoTracks()[0];if(!v)throw Error('Nenhuma tela foi selecionada.');
-      await this.publish(Source.ScreenShare,v);
+      try{v.contentHint=capture.contentHint||'motion';}catch{}const cfg=screenConfig(capture,encoding,v);this.screenEncoding=cfg;await this.publish(Source.ScreenShare,v);
       const audio=stream.getAudioTracks()[0];if(audio)await this.publish(Source.ScreenShareAudio,audio);
       v.addEventListener('ended',()=>{if(p.getTrackPublication(Source.ScreenShare)?.track.mediaStreamTrack===v)void p.setScreenShareEnabled(false);},{once:true});
     }catch(e){stream.getTracks().forEach(t=>t.stop());await p.setScreenShareEnabled(false);throw e;}
@@ -73,10 +101,11 @@ class Room{
   if(failed.length){this.emit('NetworkIssue',new Error('Falha ao enviar '+source+' para '+failed.length+' participante(s).'));
    if(failed.length===result.length){this.media.delete(source);this.localParticipant.trackPublications.delete(source);this.flags();throw Error('Falha ao publicar '+source+': '+(failed[0].error?.message||'erro WebRTC'));}
   }
+  if(source===Source.ScreenShare)await Promise.all([...this.peers.values()].map(p=>this.applyScreenPeer(p)));
   this.signal({type:'state',sources:[...this.media.keys()]});this.emit(RoomEvent.LocalTrackPublished,pub,this.localParticipant);return pub;
  }
  async remove(source,stop=true){
-  const pub=this.localParticipant?.trackPublications.get(source);if(!pub)return;
+  const pub=this.localParticipant?.trackPublications.get(source);if(!pub)return;if(source===Source.ScreenShare)this.screenEncoding=null;
   this.localParticipant.trackPublications.delete(source);this.media.delete(source);this.flags();
   await Promise.all([...this.peers.values()].map(p=>p.transceivers[sources.indexOf(source)]?.sender?.replaceTrack(null).catch(()=>{})));
   if(stop)try{pub.track.mediaStreamTrack.stop();}catch{}
@@ -136,7 +165,7 @@ class Room{
    const source=sources[index];peer.media.set(source,e.track);this.sync(peer);
    e.track.addEventListener?.('unmute',()=>this.sync(peer));e.track.addEventListener?.('ended',()=>{if(peer.media.get(source)===e.track){peer.media.delete(source);this.sync(peer);}});
   };
-  pc.onconnectionstatechange=()=>{this.emit('NetworkStatus',user,pc.connectionState,pc.iceConnectionState);if(pc.connectionState==='failed')this.emit('NetworkIssue',Error('Conexão direta indisponível: esta rede pode precisar de TURN.'));};
+  pc.onconnectionstatechange=()=>{if(pc.connectionState==='connected')void this.applyScreenPeer(peer);this.emit('NetworkStatus',user,pc.connectionState,pc.iceConnectionState);if(pc.connectionState==='failed')this.emit('NetworkIssue',Error('Conexão direta indisponível: esta rede pode precisar de TURN.'));};
    pc.oniceconnectionstatechange=()=>this.emit('NetworkStatus',user,pc.connectionState,pc.iceConnectionState);
   if(this.id<peer.id)void this.offer(peer);
  }
@@ -164,10 +193,10 @@ class Room{
      const track=this.media.get(sources[i]);if(track)await t.sender.replaceTrack(track);
     }
     for(const e of peer.pendingTrackEvents.splice(0))peer.pc.ontrack?.(e);
-    await this.flush(peer);peer.qualityCodecStatus=preferScreenCodec(peer.transceivers[2],this.qualityCodec);await peer.pc.setLocalDescription(await peer.pc.createAnswer());
+    await this.flush(peer);peer.qualityCodecStatus=preferScreenCodec(peer.transceivers[2],this.qualityCodec);await peer.pc.setLocalDescription(await peer.pc.createAnswer());await this.applyScreenPeer(peer);
     this.signal({to:peer.id,type:'answer',sdp:peer.pc.localDescription});this.resendCandidates(peer);this.stateTo(peer);
    }
-   else if(data.type==='answer'&&data.sdp?.type==='answer'){await peer.pc.setRemoteDescription(data.sdp);await this.flush(peer);this.resendCandidates(peer);this.stateTo(peer);}
+   else if(data.type==='answer'&&data.sdp?.type==='answer'){await peer.pc.setRemoteDescription(data.sdp);await this.flush(peer);await this.applyScreenPeer(peer);this.resendCandidates(peer);this.stateTo(peer);}
    else if(data.type==='ice'&&data.candidate){if(!peer.pc.remoteDescription)peer.pending.push(data.candidate);else await peer.pc.addIceCandidate(data.candidate);}
    else if(data.type==='state'&&Array.isArray(data.sources)){peer.flags=new Set(data.sources.filter(s=>sources.includes(s)));this.sync(peer);}
   }catch(e){console.warn('[Zeon Direct] Negociação:',e?.message);this.emit('NetworkIssue',e);}
