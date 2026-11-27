@@ -47,7 +47,17 @@ async function applyScreen(sender,cfg,valid){
 class Room{
  constructor(){this.localParticipant=null;this.remoteParticipants=new Map();this.activeSpeakers=[];this.listeners=new Map();this.peers=new Map();this.media=new Map();this.connected=false;this.closed=true;this.socket=null;this.counter=0;this.joinRef=null;this.timer=null;this.tokenTimer=null;this.id=null;this.topic=null;this.qualityCodec=codecPreference();this.screenEncoding=null;}
  getEncodingEngineStatus(){return {mode:'web-balanced',configuration:this.screenEncoding,peers:[...this.peers.values()].map(p=>p.screenEncodingStatus||'deferred')};}
- async applyScreenPeer(peer){const cfg=this.screenEncoding,track=this.media.get(Source.ScreenShare),sender=peer?.transceivers?.[2]?.sender;if(!cfg||!track||!sender)return;const valid=()=>this.peers.get(peer.id)===peer&&this.screenEncoding===cfg&&this.media.get(Source.ScreenShare)===track&&sender.track===track;const status=await applyScreen(sender,cfg,valid);if(valid())peer.screenEncodingStatus=status;}
+ getTransportEngineStatus(){return {version:5,peers:[...this.peers.values()].map(p=>({connection:p.pc.connectionState,ice:p.pc.iceConnectionState,screen:p.transport5?.status()||null}))};}
+ async applyScreenPeer(peer){
+  const cfg=this.screenEncoding,track=this.media.get(Source.ScreenShare),sender=peer?.transceivers?.[2]?.sender;if(!cfg||!track||!sender)return;
+  const valid=()=>!this.closed&&this.peers.get(peer.id)===peer&&this.screenEncoding===cfg&&this.media.get(Source.ScreenShare)===track&&sender.track===track;
+  if(!valid())return;
+  // An active supervisor owns the cap. Connection notifications must not reset it.
+  if(peer.transport5)return;
+  const status=await applyScreen(sender,cfg,valid);if(!valid())return;peer.screenEncodingStatus=status;
+  const engine=globalThis.ZeonTransportEngine;
+  if(status==='applied'&&engine&&!peer.transport5)peer.transport5=engine.create({sender,base:cfg.maxBitrate,valid,ready:()=>peer.pc.connectionState==='connected',apply:async(cap,check)=>({status:await applyScreen(sender,{...cfg,maxBitrate:cap},check)})});
+ }
  getScreenQualityExperiment(){return {codecPreference:this.qualityCodec,peers:[...this.peers.values()].map(p=>p.qualityCodecStatus||'auto')};}
  on(ev,cb){if(!this.listeners.has(ev))this.listeners.set(ev,new Set());this.listeners.get(ev).add(cb);return this;}
  off(ev,cb){this.listeners.get(ev)?.delete(cb);return this;}
@@ -105,7 +115,7 @@ class Room{
   this.signal({type:'state',sources:[...this.media.keys()]});this.emit(RoomEvent.LocalTrackPublished,pub,this.localParticipant);return pub;
  }
  async remove(source,stop=true){
-  const pub=this.localParticipant?.trackPublications.get(source);if(!pub)return;if(source===Source.ScreenShare)this.screenEncoding=null;
+  const pub=this.localParticipant?.trackPublications.get(source);if(!pub)return;if(source===Source.ScreenShare){this.screenEncoding=null;for(const p of this.peers.values()){p.transport5?.cancel();p.transport5=null;}}
   this.localParticipant.trackPublications.delete(source);this.media.delete(source);this.flags();
   await Promise.all([...this.peers.values()].map(p=>p.transceivers[sources.indexOf(source)]?.sender?.replaceTrack(null).catch(()=>{})));
   if(stop)try{pub.track.mediaStreamTrack.stop();}catch{}
@@ -244,7 +254,7 @@ class Room{
    this.emit(RoomEvent.TrackPublished,pub,peer.user);this.emit(RoomEvent.TrackSubscribed,pub.track,pub,peer.user);
   }
  }
- drop(id){const peer=this.peers.get(id);if(!peer)return;this.peers.delete(id);
+ drop(id){const peer=this.peers.get(id);if(!peer)return;peer.transport5?.cancel();peer.transport5=null;this.peers.delete(id);
   for(const pub of peer.user.trackPublications.values())this.emit(RoomEvent.TrackUnsubscribed,pub.track,pub,peer.user);
   try{peer.pc.close();}catch{}this.remoteParticipants.delete(peer.user.identity);this.emit(RoomEvent.ParticipantDisconnected,peer.user);}
  async startAudio(){for(const el of document.querySelectorAll('#remoteAudio audio'))try{await el.play();}catch{}}
