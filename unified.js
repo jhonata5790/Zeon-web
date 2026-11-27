@@ -636,6 +636,5 @@ window.ZeonMobileAdapter=Object.freeze({
 });
 DM?.configure({api,render,notify:popup,userId:()=>S.status?.userId||null,sidebarOpen:()=>S.sidebarOpen});
 $('#remoteAudio').replaceChildren();authGate('loading');void showAuth().catch(err=>{authGate('login');setConnection('FALHA DE CONEXÃO');popup('Não foi possível carregar a conta: '+(err?.message||'erro de rede'));});
-})();
-
 window.ZeonPlaybackEngine?.install(()=>({room:S.room,share:stageSource(),video:document.querySelector('#callSharedScreen')}));
+})();
