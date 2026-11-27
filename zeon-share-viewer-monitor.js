@@ -9,8 +9,8 @@
  const avg=x=>x.length?x.reduce((sum,v)=>sum+v,0)/x.length:null;
  const fmt=(v,s='',p=1)=>n(v)===null?'N/D':v.toFixed(p)+s;
  let room=null,track=null,identity=null,video=null,viewer=false;
- let t0=0,old=null,last=null,history=[],startupRows=[],working=false,version=0,modal=null,notice='';
- function restart(){t0=Date.now();old=null;last=null;history=[];startupRows=[];version++;notice='';}
+ let t0=0,old=null,last=null,history=[],startupRows=[],resolutions=[],working=false,version=0,modal=null,notice='';
+ function restart(){t0=Date.now();old=null;last=null;history=[];startupRows=[];resolutions=[];version++;notice='';}
  function refreshContext(){
   const x=root.ZeonViewerMonitorContext?.()||{};
   const watching=!!x.room&&!!x.share&&x.share.person!==x.room.localParticipant;
@@ -45,10 +45,10 @@
    if(!h){last={status:'waiting'};return;}
    const at=Date.now(),dt=old?at-old.at:0,q=playback();
    const bytes=n(h.bytesReceived),decoded=n(h.framesDecoded),received=n(h.framesReceived);
-   const packets=n(h.packetsReceived),lost=n(h.packetsLost);
+   const packets=n(h.packetsReceived),lost=n(h.packetsLost),receiverDropped=n(h.framesDropped),freezes=n(h.freezeCount),freezeSeconds=n(h.totalFreezesDuration);
    const b=change(bytes,old?.bytes),df=change(decoded,old?.decoded);
    const bf=change(n(h.jitterBufferDelay),old?.buffer),ef=change(n(h.jitterBufferEmittedCount),old?.emitted);
-   const dc=change(n(h.totalDecodeTime),old?.decode),lp=change(lost,old?.lost),rp=change(packets,old?.packets);
+   const dc=change(n(h.totalDecodeTime),old?.decode),lp=change(lost,old?.lost),rp=change(packets,old?.packets),fd=change(receiverDropped,old?.receiverDropped),frozen=change(freezes,old?.freezes),freezeDuration=change(freezeSeconds,old?.freezeSeconds);
    const perSecond=(a,b)=>dt>0&&change(a,b)!==null?1000*change(a,b)/dt:null;
    const seconds=+((at-t0)/1000).toFixed(1);
    const row={second:seconds,status:h.trackState==='live'?'ready':'waiting',
@@ -60,11 +60,17 @@
     jitterMs:n(h.jitter)===null?null:1000*h.jitter,
     bufferMs:bf!==null&&ef>0?1000*bf/ef:null,
     decodeMs:dc!==null&&df>0?1000*dc/df:null,
+    receiverDroppedFps:perSecond(receiverDropped,old?.receiverDropped),
+    newFreezes:frozen,freezeDurationMs:freezeDuration===null?null:1000*freezeDuration,
+    hidden:document.visibilityState==='hidden',
     playing:!!(video?.videoWidth&&video?.readyState>=2&&!video?.paused),
     connection:['new','connecting','connected','disconnected','failed','closed'].includes(h.connection)?h.connection:'unknown'};
    old={at,bytes,decoded,received,packets,lost,shown:q.shown,dropped:q.dropped,
-    buffer:n(h.jitterBufferDelay),emitted:n(h.jitterBufferEmittedCount),decode:n(h.totalDecodeTime)};
+    buffer:n(h.jitterBufferDelay),emitted:n(h.jitterBufferEmittedCount),decode:n(h.totalDecodeTime),receiverDropped,freezes,freezeSeconds};
    last=row;history.push(row);if(history.length>100)history.shift();
+   if(n(row.width)!==null&&n(row.height)!==null&&
+      (!resolutions.length||resolutions.at(-1).width!==row.width||resolutions.at(-1).height!==row.height))
+     resolutions.push({second:row.second,width:row.width,height:row.height});
    if(seconds<=30.5)startupRows.push(row);
   }catch(e){last={status:'unavailable'};console.warn('[Zeon diagnóstico de recepção]',e?.message||e);}
   finally{working=false;if(modal&&!modal.hidden)render();}
@@ -89,9 +95,10 @@
    finalFps:avg(startupRows.filter(x=>x.second>=20&&n(x.decodedFps)!==null).map(x=>x.decodedFps)),
    stableAfterSeconds:stable};
  }
+ function phase12(){return root.ZeonViewerPhase12?.analyze(last,history,resolutions)||{code:'waiting',message:'Sem dados',resolutions:[]};}
  function report(){return JSON.stringify({product:'Zeon Share Engine',
-  format:'phase11-web-receiver-1.0',capturedAt:new Date().toISOString(),
-  role:viewer?'viewer':'unavailable',startup:startup(),latest:last,samples:history,
+  format:'phase12-web-receiver-1.2',capturedAt:new Date().toISOString(),
+  role:viewer?'viewer':'unavailable',startup:startup(),phase12:phase12(),latest:last,samples:history,
   note:'Medições locais do espectador P2P. Estabilização é proxy por bitrate, não nitidez medida. Não mede atraso ponta a ponta. N/D não significa zero. Sem IPs, nomes, identidades, tokens ou mídia.'},null,2);}
  function setup(){
   if(modal?.isConnected)return;
@@ -100,8 +107,9 @@
    '<header><div><small>ZEON SHARE ENGINE · WEB E MOBILE</small><h2>Monitoramento da transmissão</h2></div><button type="button" data-monitor="close" aria-label="Fechar">×</button></header>'+
    '<p id="zw-v-status"></p><div id="zw-v-grid" class="zw-viewer-grid"></div><p id="zw-v-extra"></p>'+
    '<section class="zw-viewer-startup"><h3>Fase 1.1 · Primeiros 30 segundos</h3><p id="zw-v-progress"></p><div id="zw-v-start-grid" class="zw-viewer-grid"></div></section>'+
+   '<section class="zw-viewer-startup zw-viewer-phase12"><h3>Fase 1.2 · Fluidez e resolução</h3><p id="zw-v12-diagnosis" role="status"></p><div id="zw-v12-grid" class="zw-viewer-grid"></div><p id="zw-v12-timeline"></p></section>'+
    '<p class="zw-viewer-note">Dados do espectador. Estabilização ≠ nitidez percebida; RTT ≠ atraso ponta a ponta.</p>'+
-   '<footer><span id="zw-v-copy-status" role="status"></span><button type="button" data-monitor="copy">Copiar relatório Fase 1.1</button></footer></section>';
+   '<footer><span id="zw-v-copy-status" role="status"></span><button type="button" data-monitor="copy">Copiar relatório 1.1 + 1.2</button></footer></section>';
   document.body.append(modal);
   modal.addEventListener('click',e=>{
    const action=e.target.closest('[data-monitor]')?.dataset.monitor;
@@ -119,7 +127,7 @@
  }
  function render(){
   if(!modal||modal.hidden)return;
-  const r=last,s=startup();
+  const r=last,s=startup(),detail=phase12();
   label('zw-v-status',!room?'Entre em uma chamada para monitorar uma transmissão.':
    !viewer?'Este painel mede quem ASSISTE. Abra a transmissão de outra sessão.':
    r?.status==='ready'?(r.playing?'Vídeo P2P reproduzindo.':'Recebendo trilha P2P · aguardando reprodução.'):
@@ -136,6 +144,16 @@
    ['Bitrate inicial',fmt(s.initialMbps,' Mbps',2)],['Bitrate final',fmt(s.finalMbps,' Mbps',2)],
    ['Evolução',fmt(s.bitrateGain,'×',2)],['FPS inicial → final',fmt(s.firstFps,'')+' → '+fmt(s.finalFps,'')],
    ['Estabilização estimada',fmt(s.stableAfterSeconds,' s')]]);
+  label('zw-v12-diagnosis',detail.message);
+  grid('zw-v12-grid',[
+   ['720p alcançado',fmt(detail.first720pSecond,' s')],
+   ['Descartes na reprodução',fmt(detail.playbackDroppedPct,' %')],
+   ['Descartes no WebRTC',fmt(detail.receiverDroppedFps,' FPS')],
+   ['Congelamentos novos',fmt(r?.newFreezes,'') ],
+   ['Resolução atual',n(r?.width)!==null&&n(r?.height)!==null?r.width+' × '+r.height:'N/D'],
+   ['Diagnóstico',detail.code||'N/D']]);
+  label('zw-v12-timeline',detail.resolutions?.length?'Evolução de resolução: '+
+   detail.resolutions.map(x=>x.second+'s: '+x.width+'×'+x.height).join(' → '):'Aguardando alterações de resolução.');
   label('zw-v-copy-status',notice);
  }
  function open(){setup();modal.hidden=false;render();}
@@ -152,5 +170,5 @@
  }
  root.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal&&!modal.hidden)modal.hidden=true;});
  setInterval(()=>void sample(),2000);
- root.ZeonShareViewerMonitor=Object.freeze({open,report,summary:startup,sample});
+ root.ZeonShareViewerMonitor=Object.freeze({open,report,summary:startup,phase12,sample});
 })(window);

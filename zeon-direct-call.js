@@ -193,7 +193,9 @@ class Room{
     h.frameWidth=inbound.frameWidth??null;h.frameHeight=inbound.frameHeight??null;
     h.jitter=inbound.jitter??null;h.jitterBufferDelay=inbound.jitterBufferDelay??null;
     h.jitterBufferEmittedCount=inbound.jitterBufferEmittedCount??null;
-    h.totalDecodeTime=inbound.totalDecodeTime??null;}
+    h.totalDecodeTime=inbound.totalDecodeTime??null;
+    h.framesDropped=inbound.framesDropped??null;h.freezeCount=inbound.freezeCount??null;
+    h.totalFreezesDuration=inbound.totalFreezesDuration??null;}
    }catch{}
    return h;
   }
