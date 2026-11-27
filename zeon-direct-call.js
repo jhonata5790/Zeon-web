@@ -16,8 +16,11 @@ function publication(media,source,senders){
  async getSenderStats(){const output=[];for(const sender of senders?.()||[])try{(await sender.getStats()).forEach(v=>{if(v.type==='outbound-rtp'&&!v.isRemote)output.push({...v,type:v.kind||media.kind});});}catch{}return output;}};
  return {source,track,videoTrack:media.kind==='video'?track:null,audioTrack:media.kind==='audio'?track:null,isMuted:false,isSubscribed:true};
 }
+function codecPreference(){try{const v=localStorage.getItem('zeon-screen-codec-v2');return ['H264','VP8','VP9'].includes(v)?v:'auto';}catch{return 'auto';}}
+function preferScreenCodec(t,codec){if(codec==='auto')return 'auto';try{const all=globalThis.RTCRtpReceiver?.getCapabilities('video')?.codecs||[];const best=all.filter(x=>x.mimeType?.toLowerCase()===('video/'+codec).toLowerCase());if(!best.length||typeof t?.setCodecPreferences!=='function')return 'unsupported';t.setCodecPreferences([...best,...all.filter(x=>!best.includes(x))]);return 'preferred';}catch{return 'rejected';}}
 class Room{
- constructor(){this.localParticipant=null;this.remoteParticipants=new Map();this.activeSpeakers=[];this.listeners=new Map();this.peers=new Map();this.media=new Map();this.connected=false;this.closed=true;this.socket=null;this.counter=0;this.joinRef=null;this.timer=null;this.tokenTimer=null;this.id=null;this.topic=null;}
+ constructor(){this.localParticipant=null;this.remoteParticipants=new Map();this.activeSpeakers=[];this.listeners=new Map();this.peers=new Map();this.media=new Map();this.connected=false;this.closed=true;this.socket=null;this.counter=0;this.joinRef=null;this.timer=null;this.tokenTimer=null;this.id=null;this.topic=null;this.qualityCodec=codecPreference();}
+ getScreenQualityExperiment(){return {codecPreference:this.qualityCodec,peers:[...this.peers.values()].map(p=>p.qualityCodecStatus||'auto')};}
  on(ev,cb){if(!this.listeners.has(ev))this.listeners.set(ev,new Set());this.listeners.get(ev).add(cb);return this;}
  off(ev,cb){this.listeners.get(ev)?.delete(cb);return this;}
  emit(ev,...args){for(const f of [...(this.listeners.get(ev)||[])])try{f(...args);}catch(e){console.error('[Zeon Direct]',e);}}
@@ -138,7 +141,7 @@ class Room{
   if(this.id<peer.id)void this.offer(peer);
  }
  async offer(peer){if(peer.offered||this.closed)return;peer.offered=true;
-  try{await peer.pc.setLocalDescription(await peer.pc.createOffer());
+  try{peer.qualityCodecStatus=preferScreenCodec(peer.transceivers[2],this.qualityCodec);await peer.pc.setLocalDescription(await peer.pc.createOffer());
    const retry=(attempt=0)=>{
     if(this.closed||!this.peers.has(peer.id)||peer.pc.remoteDescription)return;
     this.signal({to:peer.id,type:'offer',sdp:peer.pc.localDescription});
@@ -161,7 +164,7 @@ class Room{
      const track=this.media.get(sources[i]);if(track)await t.sender.replaceTrack(track);
     }
     for(const e of peer.pendingTrackEvents.splice(0))peer.pc.ontrack?.(e);
-    await this.flush(peer);await peer.pc.setLocalDescription(await peer.pc.createAnswer());
+    await this.flush(peer);peer.qualityCodecStatus=preferScreenCodec(peer.transceivers[2],this.qualityCodec);await peer.pc.setLocalDescription(await peer.pc.createAnswer());
     this.signal({to:peer.id,type:'answer',sdp:peer.pc.localDescription});this.resendCandidates(peer);this.stateTo(peer);
    }
    else if(data.type==='answer'&&data.sdp?.type==='answer'){await peer.pc.setRemoteDescription(data.sdp);await this.flush(peer);this.resendCandidates(peer);this.stateTo(peer);}
